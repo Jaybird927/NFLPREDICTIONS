@@ -45,7 +45,7 @@ export function transformESPNEventToGame(
   }
 
   // Determine game status
-  let gameStatus = GAME_STATUS.SCHEDULED;
+  let gameStatus: 'scheduled' | 'in_progress' | 'final' = GAME_STATUS.SCHEDULED;
   if (event.status.type.completed) {
     gameStatus = GAME_STATUS.FINAL;
   } else if (event.status.type.state === 'in') {

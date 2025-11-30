@@ -103,25 +103,8 @@ export default function Home() {
       throw new Error('Failed to save predictions');
     }
 
-    // Reload data to get updated predictions (without showing loading state)
-    try {
-      const gamesRes = await fetch(
-        `/api/games?week=${currentWeek}&seasonYear=${CURRENT_SEASON}&seasonType=${CURRENT_SEASON_TYPE}`,
-        { cache: 'no-store' }
-      );
-      const gamesData = await gamesRes.json();
-      setGames(gamesData.games);
-      setPredictions(gamesData.predictions);
-
-      const leaderboardRes = await fetch(
-        `/api/leaderboard?seasonYear=${CURRENT_SEASON}&seasonType=${CURRENT_SEASON_TYPE}`,
-        { cache: 'no-store' }
-      );
-      const leaderboardData = await leaderboardRes.json();
-      setLeaderboard(leaderboardData);
-    } catch (error) {
-      console.error('Failed to reload data after save:', error);
-    }
+    // Don't reload immediately - rely on optimistic update
+    // Auto-refresh will sync data every 60 seconds
   };
 
   const requireAdmin = (callback: () => void) => {

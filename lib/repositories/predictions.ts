@@ -54,15 +54,14 @@ export function upsertPrediction(
   gameId: number,
   predictedWinnerTeamId: string
 ): Prediction {
-  // Check if game is locked
+  // Check if game exists
   const game = getGameById(gameId);
   if (!game) {
     throw new Error(`Game ${gameId} not found`);
   }
 
-  if (new Date() >= game.gameDate) {
-    throw new Error('Cannot predict - game has already started');
-  }
+  // Note: Game date/lock checking is handled at the UI/API layer with admin auth
+  // This repository layer allows all saves to support admin overrides
 
   const existing = getPrediction(userId, gameId);
 
@@ -87,15 +86,14 @@ export function upsertPrediction(
 }
 
 export function deletePrediction(userId: number, gameId: number): void {
-  // Check if game is locked
+  // Check if game exists
   const game = getGameById(gameId);
   if (!game) {
     throw new Error(`Game ${gameId} not found`);
   }
 
-  if (new Date() >= game.gameDate) {
-    throw new Error('Cannot delete prediction - game has already started');
-  }
+  // Note: Game date/lock checking is handled at the UI/API layer with admin auth
+  // This repository layer allows all deletes to support admin overrides
 
   const stmt = db.prepare(`
     DELETE FROM predictions

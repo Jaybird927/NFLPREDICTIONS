@@ -35,16 +35,29 @@ export async function POST(request: Request) {
       }
     }
 
-    // Import predictions
+    // Import predictions (matching by ESPN event ID and user name)
     if (predictions && Array.isArray(predictions)) {
       const predStmt = db.prepare(`
         INSERT OR IGNORE INTO predictions (user_id, game_id, predicted_winner_team_id)
-        VALUES (?, ?, ?)
+        SELECT u.id, g.id, ?
+        FROM users u, games g
+        WHERE u.name = ? AND g.espn_event_id = ?
       `);
 
       for (const pred of predictions) {
-        predStmt.run(pred.user_id, pred.game_id, pred.predicted_winner_team_id);
-        predictionsImported++;
+        // Support both old format (user_id, game_id) and new format (user_name, espn_event_id)
+        if (pred.user_name && pred.espn_event_id) {
+          predStmt.run(pred.predicted_winner_team_id, pred.user_name, pred.espn_event_id);
+          predictionsImported++;
+        } else if (pred.user_id && pred.game_id) {
+          // Legacy format support
+          const directStmt = db.prepare(`
+            INSERT OR IGNORE INTO predictions (user_id, game_id, predicted_winner_team_id)
+            VALUES (?, ?, ?)
+          `);
+          directStmt.run(pred.user_id, pred.game_id, pred.predicted_winner_team_id);
+          predictionsImported++;
+        }
       }
     }
 

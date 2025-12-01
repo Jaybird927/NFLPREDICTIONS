@@ -12,9 +12,13 @@ interface PredictionGridProps {
   onSave: (predictions: Array<{ userId: number; gameId: number; predictedWinnerTeamId: string | null }>) => Promise<void>;
   isAdmin: boolean;
   onRequestAuth: () => void;
+  authToken?: string; // New: Auth token for API requests
+  restrictToUser?: number; // New: Only show this user's column
 }
 
-export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth }: PredictionGridProps) {
+export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser }: PredictionGridProps) {
+  // Filter users if restrictToUser is set
+  const displayUsers = restrictToUser ? users.filter(u => u.id === restrictToUser) : users;
   // Build a map for quick lookup: "userId-gameId" -> prediction
   const predictionMap = new Map<string, Prediction>();
   predictions.forEach((pred) => {
@@ -35,8 +39,14 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
   }, [predictions]);
 
   const handleCellChange = async (userId: number, gameId: number, teamId: string | null, isLocked: boolean) => {
-    // Only require admin password for locked (started/finished) games
+    // For restricted users (non-admin), show locked message for locked games
     if (isLocked && !isAdmin) {
+      if (restrictToUser) {
+        // Regular user trying to modify locked game - show message
+        alert('This game has already started. Picks are locked.');
+        return;
+      }
+      // Admin view - require password
       onRequestAuth();
       return;
     }
@@ -94,7 +104,7 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               <th className="sticky left-0 z-10 bg-white border border-gray-300 px-4 py-2 text-left font-semibold text-sm">
                 Game
               </th>
-              {users.map((user) => (
+              {displayUsers.map((user) => (
                 <th
                   key={user.id}
                   className="border border-gray-300 px-2 py-2 text-center font-semibold text-sm"
@@ -129,7 +139,7 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                       )}
                     </div>
                   </td>
-                  {users.map((user) => {
+                  {displayUsers.map((user) => {
                     const key = `${user.id}-${game.id}`;
                     const prediction = predictionMap.get(key);
                     const selectedTeamId = selections.get(key) || null;

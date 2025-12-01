@@ -3,6 +3,7 @@ export interface User {
   id: number;
   name: string;
   displayName: string;
+  authToken?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -11,6 +12,7 @@ export interface UserRow {
   id: number;
   name: string;
   display_name: string;
+  auth_token?: string;
   created_at: string;
   updated_at: string;
 }

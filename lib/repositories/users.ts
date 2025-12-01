@@ -2,12 +2,14 @@ import db from '../db';
 import { User, UserRow } from '@/types';
 import { parseDbDate } from '../utils/date';
 import { normalizeUsername } from '../utils/validators';
+import { generateUserToken } from '../utils/tokens';
 
 function rowToUser(row: UserRow): User {
   return {
     id: row.id,
     name: row.name,
     displayName: row.display_name,
+    authToken: row.auth_token,
     createdAt: parseDbDate(row.created_at),
     updatedAt: parseDbDate(row.updated_at),
   };
@@ -32,15 +34,22 @@ export function getUserByName(name: string): User | null {
   return row ? rowToUser(row) : null;
 }
 
+export function getUserByToken(token: string): User | null {
+  const stmt = db.prepare('SELECT * FROM users WHERE auth_token = ?');
+  const row = stmt.get(token) as UserRow | undefined;
+  return row ? rowToUser(row) : null;
+}
+
 export function createUser(displayName: string): User {
   const name = normalizeUsername(displayName);
+  const authToken = generateUserToken();
 
   const stmt = db.prepare(`
-    INSERT INTO users (name, display_name)
-    VALUES (?, ?)
+    INSERT INTO users (name, display_name, auth_token)
+    VALUES (?, ?, ?)
   `);
 
-  const result = stmt.run(name, displayName);
+  const result = stmt.run(name, displayName, authToken);
   const userId = result.lastInsertRowid as number;
 
   return getUserById(userId)!;
@@ -57,4 +66,13 @@ export function findOrCreateUser(displayName: string): User {
     return existing;
   }
   return createUser(displayName);
+}
+
+export function regenerateToken(userId: number): string {
+  const newToken = generateUserToken();
+
+  const stmt = db.prepare('UPDATE users SET auth_token = ? WHERE id = ?');
+  stmt.run(newToken, userId);
+
+  return newToken;
 }

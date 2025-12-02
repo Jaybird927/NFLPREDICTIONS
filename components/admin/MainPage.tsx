@@ -254,6 +254,12 @@ export default function MainPage({ adminToken }: MainPageProps) {
             {showUserManagement ? 'Hide' : 'Manage'} Participants
           </button>
           <button
+            onClick={() => window.location.href = `/admin/${adminToken}/links`}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            User Links
+          </button>
+          <button
             onClick={handleSyncScores}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >

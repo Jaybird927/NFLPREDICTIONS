@@ -9,11 +9,12 @@ function generateToken(): string {
 
 export async function GET(request: Request) {
   try {
-    // Verify secret for security
+    // Verify secret for security - accept either CRON_SECRET or ADMIN_AUTH_TOKEN
     const authHeader = request.headers.get('authorization');
-    const expectedAuth = `Bearer ${process.env.CRON_SECRET}`;
+    const expectedCronAuth = `Bearer ${process.env.CRON_SECRET}`;
+    const expectedAdminAuth = `Bearer ${process.env.ADMIN_AUTH_TOKEN}`;
 
-    if (authHeader !== expectedAuth) {
+    if (authHeader !== expectedCronAuth && authHeader !== expectedAdminAuth) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

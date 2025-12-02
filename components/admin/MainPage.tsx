@@ -185,7 +185,7 @@ export default function MainPage({ adminToken }: MainPageProps) {
     try {
       const res = await fetch('/api/cron/sync-scores', {
         headers: {
-          'Authorization': 'Bearer dev-cron-secret-change-in-production'
+          'Authorization': `Bearer ${adminToken}`
         }
       });
 

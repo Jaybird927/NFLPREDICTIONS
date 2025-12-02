@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Game, User, Prediction } from '@/types';
 import { PredictionGrid } from '@/components/prediction/PredictionGrid';
+import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
 interface UserPredictionViewProps {
@@ -15,6 +16,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [games, setGames] = useState<Game[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -63,6 +65,14 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
 
       // Only need the current user for the grid
       setUsers([{ id: userId, name: '', displayName, createdAt: new Date(), updatedAt: new Date() }]);
+
+      // Load leaderboard
+      const leaderboardRes = await fetch(
+        `/api/leaderboard?seasonYear=${CURRENT_SEASON}&seasonType=${CURRENT_SEASON_TYPE}`,
+        { cache: 'no-store' }
+      );
+      const leaderboardData = await leaderboardRes.json();
+      setLeaderboard(leaderboardData);
 
       setLastUpdate(new Date());
     } catch (error) {
@@ -151,6 +161,12 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             authToken={authToken}
             restrictToUser={userId}
           />
+        </div>
+
+        {/* Leaderboard */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
+          <LeaderboardTable entries={leaderboard} />
         </div>
       </div>
     </main>

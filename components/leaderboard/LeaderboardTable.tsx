@@ -25,8 +25,52 @@ export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableP
     );
   }
 
+  // Find highlighted user's entry and position info
+  const userEntry = entries.find(e => e.id === highlightUserId);
+  let feedbackMessage = '';
+
+  if (userEntry && highlightUserId) {
+    const userRank = userEntry.rank;
+    const lastRank = entries[entries.length - 1]?.rank || 1;
+
+    // Check if tied for first
+    const tiedForFirst = entries.filter(e => e.rank === 1).length > 1 && userRank === 1;
+    // Check if tied for last
+    const tiedForLast = entries.filter(e => e.rank === lastRank).length > 1 && userRank === lastRank;
+    // Check if alone in first
+    const isFirst = userRank === 1 && !tiedForFirst;
+    // Check if alone in last
+    const isLast = userRank === lastRank && !tiedForLast && entries.length > 1;
+
+    if (isFirst) {
+      feedbackMessage = "🏆 1st place - You're doing great!";
+    } else if (tiedForFirst) {
+      feedbackMessage = "🏆 T-1st - You're doing great!";
+    } else if (isLast) {
+      feedbackMessage = "💪 You can do this!";
+    } else if (tiedForLast) {
+      feedbackMessage = "💪 You can do this!";
+    } else if (userRank === 2) {
+      feedbackMessage = "🥈 2nd place - Keep pushing!";
+    } else if (userRank === 3) {
+      feedbackMessage = "🥉 3rd place - Nice work!";
+    } else {
+      feedbackMessage = `📊 ${userRank}${getOrdinalSuffix(userRank)} place - Keep it up!`;
+    }
+  }
+
+  function getOrdinalSuffix(num: number): string {
+    const j = num % 10;
+    const k = num % 100;
+    if (j === 1 && k !== 11) return 'st';
+    if (j === 2 && k !== 12) return 'nd';
+    if (j === 3 && k !== 13) return 'rd';
+    return 'th';
+  }
+
   return (
-    <div className="overflow-x-auto">
+    <div className="space-y-4">
+      <div className="overflow-x-auto">
       <table className="min-w-full border-collapse bg-white">
         <thead>
           <tr className="bg-gray-100">
@@ -84,6 +128,14 @@ export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableP
           })}
         </tbody>
       </table>
+      </div>
+
+      {/* Feedback Message */}
+      {feedbackMessage && (
+        <div className="text-center p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
+          <p className="text-lg font-semibold text-blue-900">{feedbackMessage}</p>
+        </div>
+      )}
     </div>
   );
 }

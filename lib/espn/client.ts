@@ -47,9 +47,22 @@ export class ESPNClient {
         ? (seasonData.type as any).type
         : seasonData?.type || 2;
 
+      let week = data.week?.number || 1;
+
+      // Check if all games in current week are finished
+      const allGamesFinished = data.events?.every(event => {
+        const state = event.status?.type?.state;
+        return state === 'post';
+      }) ?? false;
+
+      // If all games are finished, advance to next week (max 18 for regular season)
+      if (allGamesFinished && data.events && data.events.length > 0) {
+        week = Math.min(week + 1, 18);
+      }
+
       return {
         seasonType,
-        week: data.week?.number || 1,
+        week,
         year: seasonData?.year || new Date().getFullYear(),
       };
     } catch (error) {

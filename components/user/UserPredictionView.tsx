@@ -105,6 +105,27 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
     }
   };
 
+  const handleSyncScores = async () => {
+    try {
+      const res = await fetch('/api/cron/sync-scores', {
+        headers: {
+          'Authorization': `Bearer ${authToken}`
+        }
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to sync scores');
+      }
+
+      const data = await res.json();
+      alert(`Synced ${data.result.gamesUpdated} games successfully!`);
+      await loadData();
+    } catch (error) {
+      console.error('Failed to sync scores:', error);
+      alert('Failed to sync scores');
+    }
+  };
+
   if (isLoading || currentWeek === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -145,6 +166,16 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             disabled={currentWeek === 18}
           >
             Next Week →
+          </button>
+        </div>
+
+        {/* Sync Scores Button */}
+        <div className="flex justify-center">
+          <button
+            onClick={handleSyncScores}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Sync Scores Now
           </button>
         </div>
 

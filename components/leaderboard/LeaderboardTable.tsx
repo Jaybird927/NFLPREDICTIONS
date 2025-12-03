@@ -13,9 +13,10 @@ interface LeaderboardEntry {
 
 interface LeaderboardTableProps {
   entries: LeaderboardEntry[];
+  highlightUserId?: number;
 }
 
-export function LeaderboardTable({ entries }: LeaderboardTableProps) {
+export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableProps) {
   if (entries.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -53,13 +54,19 @@ export function LeaderboardTable({ entries }: LeaderboardTableProps) {
                 ? entry.win_percentage.toFixed(1)
                 : '-';
 
+            const isHighlighted = highlightUserId === entry.id;
+
             return (
-              <tr key={entry.id} className="hover:bg-gray-50">
+              <tr
+                key={entry.id}
+                className={isHighlighted ? "bg-blue-100 hover:bg-blue-200" : "hover:bg-gray-50"}
+              >
                 <td className="border border-gray-300 px-4 py-2 text-center font-semibold">
                   {entry.rank}
                 </td>
-                <td className="border border-gray-300 px-4 py-2">
+                <td className={`border border-gray-300 px-4 py-2 ${isHighlighted ? "font-bold" : ""}`}>
                   {entry.display_name}
+                  {isHighlighted && " (You)"}
                 </td>
                 <td className="border border-gray-300 px-4 py-2 text-center font-mono text-sm">
                   {entry.correct_predictions}-{entry.incorrect_predictions}-

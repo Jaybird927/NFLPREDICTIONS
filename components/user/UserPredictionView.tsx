@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Game, User, Prediction } from '@/types';
 import { PredictionGrid } from '@/components/prediction/PredictionGrid';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
+import { TutorialModal } from '@/components/user/TutorialModal';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
 interface UserPredictionViewProps {
@@ -20,6 +21,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
 
   // Load current week on mount
   useEffect(() => {
@@ -169,8 +171,14 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
           </button>
         </div>
 
-        {/* Sync Scores Button */}
-        <div className="flex justify-center">
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-4">
+          <button
+            onClick={() => setShowTutorial(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Tutorial
+          </button>
           <button
             onClick={handleSyncScores}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -197,9 +205,12 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         {/* Leaderboard */}
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
-          <LeaderboardTable entries={leaderboard} />
+          <LeaderboardTable entries={leaderboard} highlightUserId={userId} />
         </div>
       </div>
+
+      {/* Tutorial Modal */}
+      {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
     </main>
   );
 }

@@ -24,7 +24,6 @@ export function TutorialModal({ onClose }: TutorialModalProps) {
               <h3 className="text-xl font-semibold mb-2 text-gray-900">Making Predictions</h3>
               <ul className="list-disc pl-5 space-y-2">
                 <li>Click on a team logo to predict they will win that game</li>
-                <li>Your selection will be highlighted in green</li>
                 <li>Click the team again to deselect if you want to change your pick</li>
                 <li>Make sure to submit your picks before the game starts!</li>
               </ul>
@@ -44,6 +43,7 @@ export function TutorialModal({ onClose }: TutorialModalProps) {
               <ul className="list-disc pl-5 space-y-2">
                 <li>Correct predictions are shown with a green checkmark ✓</li>
                 <li>Incorrect predictions are shown with a red X ✗</li>
+                <li>W-L-P stands for Win-Loss-Pending (games not yet finished)</li>
                 <li>Win percentage is calculated from completed games only</li>
                 <li>The leaderboard shows your ranking against other participants</li>
               </ul>

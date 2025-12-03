@@ -18,17 +18,19 @@ export async function GET(request: Request) {
         COALESCE(ls.incorrect_predictions, 0) as incorrect_predictions,
         COALESCE(ls.pending_predictions, 0) as pending_predictions,
         COALESCE(ls.win_percentage, 0) as win_percentage,
-        ROW_NUMBER() OVER (
+        RANK() OVER (
           ORDER BY
             COALESCE(ls.win_percentage, 0) DESC,
-            COALESCE(ls.correct_predictions, 0) DESC,
-            u.display_name ASC
+            COALESCE(ls.correct_predictions, 0) DESC
         ) as rank
       FROM users u
       LEFT JOIN leaderboard_stats ls ON u.id = ls.user_id
         AND ls.season_year = ?
         AND ls.season_type = ?
-      ORDER BY rank
+      ORDER BY
+        COALESCE(ls.win_percentage, 0) DESC,
+        COALESCE(ls.correct_predictions, 0) DESC,
+        u.display_name ASC
     `);
 
     const leaderboard = stmt.all(seasonYear, seasonType);

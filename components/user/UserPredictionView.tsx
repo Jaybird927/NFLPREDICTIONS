@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Game, User, Prediction } from '@/types';
 import { PredictionGrid } from '@/components/prediction/PredictionGrid';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
-import { TutorialModal } from '@/components/user/TutorialModal';
+import { TipsModal } from '@/components/user/TipsModal';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
 interface UserPredictionViewProps {
@@ -21,7 +21,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-  const [showTutorial, setShowTutorial] = useState(false);
+  const [showTips, setShowTips] = useState(false);
 
   // Load current week on mount
   useEffect(() => {
@@ -174,10 +174,10 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         {/* Action Buttons */}
         <div className="flex justify-center gap-4">
           <button
-            onClick={() => setShowTutorial(true)}
+            onClick={() => setShowTips(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
-            Tutorial
+            Tips
           </button>
           <button
             onClick={handleSyncScores}
@@ -209,8 +209,8 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         </div>
       </div>
 
-      {/* Tutorial Modal */}
-      {showTutorial && <TutorialModal onClose={() => setShowTutorial(false)} />}
+      {/* Tips Modal */}
+      {showTips && <TipsModal onClose={() => setShowTips(false)} />}
     </main>
   );
 }

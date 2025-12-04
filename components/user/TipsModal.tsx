@@ -63,6 +63,7 @@ export function TipsModal({ onClose }: TipsModalProps) {
             <section>
               <h3 className="text-xl font-semibold mb-2 text-gray-900">Tips</h3>
               <ul className="list-disc pl-5 space-y-2">
+                <li className="text-orange-600 font-semibold">📅 It's recommended to submit all your picks before Thursday Night Football</li>
                 <li>Make your picks early in the week for all games</li>
                 <li>You can come back and update picks before games start</li>
                 <li>Your row in the leaderboard is highlighted in blue</li>

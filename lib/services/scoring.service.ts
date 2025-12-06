@@ -13,8 +13,8 @@ export async function updatePredictionsForGame(gameId: number): Promise<void> {
   console.log(`Updating predictions for game ${gameId}, winner: ${game.winnerTeamId}`);
 
   // Check if this is the GB @ DET game (game to skip for missing predictions)
-  const skipMissingPenalty = (game.homeTeamId === 'DET' && game.awayTeamId === 'GB') ||
-                             (game.homeTeamId === 'GB' && game.awayTeamId === 'DET');
+  const skipMissingPenalty = (game.homeTeam.id === 'DET' && game.awayTeam.id === 'GB') ||
+                             (game.homeTeam.id === 'GB' && game.awayTeam.id === 'DET');
 
   // Create missing predictions as losses (except for excluded games)
   if (!skipMissingPenalty) {

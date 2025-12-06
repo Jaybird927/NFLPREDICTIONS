@@ -14,7 +14,8 @@ export interface SyncResult {
 export async function syncGamesFromESPN(
   seasonType: number,
   week: number,
-  seasonYear?: number
+  seasonYear?: number,
+  noCache: boolean = false
 ): Promise<SyncResult> {
   const result: SyncResult = {
     gamesProcessed: 0,
@@ -26,7 +27,7 @@ export async function syncGamesFromESPN(
   try {
     console.log(`Syncing games for season type ${seasonType}, week ${week}...`);
 
-    const scoreboard = await espnClient.getScoreboard(seasonType, week);
+    const scoreboard = await espnClient.getScoreboard(seasonType, week, noCache);
 
     if (!scoreboard.events || scoreboard.events.length === 0) {
       console.log('No games found for this week');
@@ -81,9 +82,9 @@ export async function syncGamesFromESPN(
   }
 }
 
-export async function syncCurrentWeek(): Promise<SyncResult> {
+export async function syncCurrentWeek(noCache: boolean = false): Promise<SyncResult> {
   const currentWeek = await espnClient.getCurrentWeek();
-  return syncGamesFromESPN(currentWeek.seasonType, currentWeek.week, currentWeek.year);
+  return syncGamesFromESPN(currentWeek.seasonType, currentWeek.week, currentWeek.year, noCache);
 }
 
 export async function syncEntireSeason(seasonYear: number, seasonType: number): Promise<SyncResult> {

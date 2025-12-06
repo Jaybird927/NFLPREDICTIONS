@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     }
 
     console.log('Starting score sync...');
-    const result = await syncCurrentWeek();
+    const result = await syncCurrentWeek(true); // Pass true to bypass cache
 
     console.log('Score sync complete:', result);
 

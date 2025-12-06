@@ -8,12 +8,12 @@ export class ESPNClient {
     this.baseUrl = ESPN_API_BASE_URL;
   }
 
-  async getScoreboard(seasonType: number, week: number): Promise<ESPNScoreboardResponse> {
+  async getScoreboard(seasonType: number, week: number, noCache: boolean = false): Promise<ESPNScoreboardResponse> {
     const url = `${this.baseUrl}/scoreboard?seasontype=${seasonType}&week=${week}`;
 
     try {
       const response = await fetch(url, {
-        next: { revalidate: 300 }, // Cache for 5 minutes
+        ...(noCache ? { cache: 'no-store' } : { next: { revalidate: 300 } }), // Cache for 5 minutes unless noCache is true
         signal: AbortSignal.timeout(10000), // 10 second timeout
       });
 

@@ -29,11 +29,11 @@ export class ESPNClient {
     }
   }
 
-  async getCurrentWeek(): Promise<{ seasonType: number; week: number; year: number }> {
+  async getCurrentWeek(noCache: boolean = false): Promise<{ seasonType: number; week: number; year: number }> {
     try {
       const url = `${this.baseUrl}/scoreboard`;
       const response = await fetch(url, {
-        next: { revalidate: 3600 }, // Cache for 1 hour
+        ...(noCache ? { cache: 'no-store' } : { next: { revalidate: 3600 } }), // Cache for 1 hour unless noCache is true
       });
 
       if (!response.ok) {

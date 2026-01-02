@@ -83,7 +83,7 @@ export async function syncGamesFromESPN(
 }
 
 export async function syncCurrentWeek(noCache: boolean = false): Promise<SyncResult> {
-  const currentWeek = await espnClient.getCurrentWeek();
+  const currentWeek = await espnClient.getCurrentWeek(noCache);
   return syncGamesFromESPN(currentWeek.seasonType, currentWeek.week, currentWeek.year, noCache);
 }
 

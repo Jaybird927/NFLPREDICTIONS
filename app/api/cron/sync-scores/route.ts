@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { syncCurrentWeek } from '@/lib/services/game.service';
+import { syncCurrentWeek, syncGamesFromESPN } from '@/lib/services/game.service';
 import { validateUserToken, validateAdminToken } from '@/lib/utils/tokens';
 
 export async function GET(request: Request) {
@@ -28,7 +28,26 @@ export async function GET(request: Request) {
     }
 
     console.log('Starting score sync...');
-    const result = await syncCurrentWeek(true); // Pass true to bypass cache
+
+    // Check if specific week/season params are provided
+    const { searchParams } = new URL(request.url);
+    const week = searchParams.get('week');
+    const seasonYear = searchParams.get('seasonYear');
+    const seasonType = searchParams.get('seasonType');
+
+    let result;
+    if (week && seasonYear && seasonType) {
+      // Sync specific week
+      result = await syncGamesFromESPN(
+        parseInt(seasonType),
+        parseInt(week),
+        parseInt(seasonYear),
+        true // bypass cache
+      );
+    } else {
+      // Sync current week
+      result = await syncCurrentWeek(true); // Pass true to bypass cache
+    }
 
     console.log('Score sync complete:', result);
 

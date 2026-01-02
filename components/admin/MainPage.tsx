@@ -183,7 +183,7 @@ export default function MainPage({ adminToken }: MainPageProps) {
 
   const handleSyncScores = async () => {
     try {
-      const res = await fetch('/api/cron/sync-scores', {
+      const res = await fetch(`/api/cron/sync-scores?week=${currentWeek}&seasonYear=${CURRENT_SEASON}&seasonType=${CURRENT_SEASON_TYPE}`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -194,7 +194,7 @@ export default function MainPage({ adminToken }: MainPageProps) {
       }
 
       const data = await res.json();
-      alert(`Synced ${data.result.gamesUpdated} games successfully!`);
+      alert(`Synced ${data.result.gamesUpdated} games for Week ${currentWeek} successfully!`);
       await loadData();
     } catch (error) {
       console.error('Failed to sync scores:', error);

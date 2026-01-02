@@ -57,9 +57,14 @@ export async function syncGamesFromESPN(
           // 1. Game just became final
           // 2. Winner changed
           // 3. Game was already final but predictions weren't scored
+          console.log(`Game ${event.id}: status=${gameData.gameStatus}, winner=${gameData.winnerTeamId}, homeScore=${gameData.homeScore}, awayScore=${gameData.awayScore}`);
           if (gameData.gameStatus === GAME_STATUS.FINAL && gameData.winnerTeamId) {
             console.log(`Game ${event.id} is final with winner ${gameData.winnerTeamId}, updating predictions...`);
             await updatePredictionsForGame(gameId);
+          } else if (gameData.gameStatus === GAME_STATUS.FINAL && !gameData.winnerTeamId) {
+            console.log(`WARNING: Game ${event.id} is final but has no winner (tie game?)`);
+          } else {
+            console.log(`Game ${event.id} not final yet, skipping prediction updates`);
           }
         } else {
           result.gamesCreated++;

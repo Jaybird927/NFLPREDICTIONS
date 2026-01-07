@@ -19,6 +19,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
+  const [currentSeasonType, setCurrentSeasonType] = useState<number>(CURRENT_SEASON_TYPE);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [showTips, setShowTips] = useState(false);
@@ -30,9 +31,11 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         const res = await fetch('/api/current-week');
         const data = await res.json();
         setCurrentWeek(data.week);
+        setCurrentSeasonType(data.seasonType);
       } catch (error) {
         console.error('Failed to load current week:', error);
         setCurrentWeek(13); // Fallback to week 13
+        setCurrentSeasonType(2); // Fallback to regular season
       }
     };
 
@@ -58,7 +61,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
     try {
       // Load games and predictions
       const gamesRes = await fetch(
-        `/api/games?week=${currentWeek}&seasonYear=${CURRENT_SEASON}&seasonType=${CURRENT_SEASON_TYPE}`,
+        `/api/games?week=${currentWeek}&seasonYear=${CURRENT_SEASON}&seasonType=${currentSeasonType}`,
         { cache: 'no-store' }
       );
       const gamesData = await gamesRes.json();
@@ -70,7 +73,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
 
       // Load leaderboard
       const leaderboardRes = await fetch(
-        `/api/leaderboard?seasonYear=${CURRENT_SEASON}&seasonType=${CURRENT_SEASON_TYPE}`,
+        `/api/leaderboard?seasonYear=${CURRENT_SEASON}&seasonType=${currentSeasonType}`,
         { cache: 'no-store' }
       );
       const leaderboardData = await leaderboardRes.json();
@@ -128,6 +131,39 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
     }
   };
 
+  // Helper to get season type label
+  const getSeasonTypeLabel = (type: number) => {
+    switch (type) {
+      case 1: return 'Preseason';
+      case 2: return 'Regular Season';
+      case 3: return 'Playoffs';
+      default: return 'Season';
+    }
+  };
+
+  // Helper to get max week for current season type
+  const getMaxWeek = () => {
+    switch (currentSeasonType) {
+      case 1: return 4; // Preseason
+      case 2: return 18; // Regular season
+      case 3: return 5; // Playoffs
+      default: return 18;
+    }
+  };
+
+  // Helper to get week label for playoffs
+  const getWeekLabel = (week: number) => {
+    if (currentSeasonType !== 3) return `Week ${week}`;
+    switch (week) {
+      case 1: return 'Wild Card';
+      case 2: return 'Divisional';
+      case 3: return 'Conference';
+      case 4: return 'Pro Bowl';
+      case 5: return 'Super Bowl';
+      default: return `Playoff Week ${week}`;
+    }
+  };
+
   if (isLoading || currentWeek === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -142,12 +178,28 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">{displayName}'s Predictions</h1>
-          <p className="text-gray-600">Week {currentWeek} - {CURRENT_SEASON} Season</p>
+          <p className="text-gray-600">{getWeekLabel(currentWeek)} - {CURRENT_SEASON} {getSeasonTypeLabel(currentSeasonType)}</p>
           {lastUpdate && (
             <p className="text-xs text-gray-400 mt-1">
               Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refreshes every minute
             </p>
           )}
+        </div>
+
+        {/* Season Type Selector */}
+        <div className="flex justify-center gap-2">
+          <button
+            onClick={() => { setCurrentSeasonType(2); setCurrentWeek(1); }}
+            className={`px-4 py-2 rounded-lg border ${currentSeasonType === 2 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+          >
+            Regular Season
+          </button>
+          <button
+            onClick={() => { setCurrentSeasonType(3); setCurrentWeek(1); }}
+            className={`px-4 py-2 rounded-lg border ${currentSeasonType === 3 ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-300 hover:bg-gray-50'}`}
+          >
+            Playoffs
+          </button>
         </div>
 
         {/* Week Selector */}
@@ -157,17 +209,17 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             disabled={currentWeek === 1}
           >
-            ← Previous Week
+            ← Previous
           </button>
-          <div className="px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold">
-            Week {currentWeek}
+          <div className="px-4 py-2 bg-white border border-gray-300 rounded-lg font-semibold min-w-[180px] text-center">
+            {getWeekLabel(currentWeek)}
           </div>
           <button
-            onClick={() => setCurrentWeek(Math.min(18, currentWeek + 1))}
+            onClick={() => setCurrentWeek(Math.min(getMaxWeek(), currentWeek + 1))}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            disabled={currentWeek === 18}
+            disabled={currentWeek === getMaxWeek()}
           >
-            Next Week →
+            Next →
           </button>
         </div>
 

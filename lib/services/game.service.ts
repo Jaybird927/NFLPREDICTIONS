@@ -100,8 +100,8 @@ export async function syncEntireSeason(seasonYear: number, seasonType: number): 
     errors: [],
   };
 
-  // Regular season has 18 weeks
-  const maxWeeks = seasonType === 2 ? 18 : 4;
+  // Regular season has 18 weeks, playoffs have 5 weeks (Wild Card, Divisional, Conference, Pro Bowl, Super Bowl)
+  const maxWeeks = seasonType === 2 ? 18 : seasonType === 3 ? 5 : 4;
 
   for (let week = 1; week <= maxWeeks; week++) {
     console.log(`Syncing week ${week}...`);

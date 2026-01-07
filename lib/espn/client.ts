@@ -55,9 +55,13 @@ export class ESPNClient {
         return state === 'post';
       }) ?? false;
 
-      // If all games are finished, advance to next week (max 18 for regular season)
+      // Determine max week based on season type
+      // Regular season: 18 weeks, Playoffs: 5 weeks (Wild Card, Divisional, Conference, Pro Bowl, Super Bowl)
+      const maxWeek = seasonType === 2 ? 18 : seasonType === 3 ? 5 : 4;
+
+      // If all games are finished, advance to next week
       if (allGamesFinished && data.events && data.events.length > 0) {
-        week = Math.min(week + 1, 18);
+        week = Math.min(week + 1, maxWeek);
       }
 
       return {

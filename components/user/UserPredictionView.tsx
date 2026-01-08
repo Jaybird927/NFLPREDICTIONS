@@ -28,7 +28,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   useEffect(() => {
     const loadCurrentWeek = async () => {
       try {
-        const res = await fetch('/api/current-week');
+        const res = await fetch('/api/current-week', { cache: 'no-store' });
         const data = await res.json();
         setCurrentWeek(data.week);
         setCurrentSeasonType(data.seasonType);
@@ -42,7 +42,26 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
     loadCurrentWeek();
   }, []);
 
-  // Load data when week changes
+  // Check for week/season updates every 5 minutes
+  useEffect(() => {
+    const weekCheckInterval = setInterval(async () => {
+      try {
+        const res = await fetch('/api/current-week', { cache: 'no-store' });
+        const data = await res.json();
+        // Only auto-update if the API says we should be on a different week/season
+        if (data.week !== currentWeek || data.seasonType !== currentSeasonType) {
+          setCurrentWeek(data.week);
+          setCurrentSeasonType(data.seasonType);
+        }
+      } catch (error) {
+        console.error('Failed to check current week:', error);
+      }
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(weekCheckInterval);
+  }, [currentWeek, currentSeasonType]);
+
+  // Load data when week or season type changes
   useEffect(() => {
     if (currentWeek === null) return;
 
@@ -54,7 +73,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
     }, 60000); // 60 seconds
 
     return () => clearInterval(interval);
-  }, [currentWeek]);
+  }, [currentWeek, currentSeasonType]);
 
   const loadData = async () => {
     setIsLoading(true);

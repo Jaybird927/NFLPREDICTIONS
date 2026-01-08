@@ -43,7 +43,7 @@ export class ESPNClient {
       const data = await response.json() as ESPNScoreboardResponse;
 
       const seasonData = data.leagues[0]?.season;
-      const seasonType = typeof seasonData?.type === 'object'
+      let seasonType = typeof seasonData?.type === 'object'
         ? (seasonData.type as any).type
         : seasonData?.type || 2;
 
@@ -59,9 +59,17 @@ export class ESPNClient {
       // Regular season: 18 weeks, Playoffs: 5 weeks (Wild Card, Divisional, Conference, Pro Bowl, Super Bowl)
       const maxWeek = seasonType === 2 ? 18 : seasonType === 3 ? 5 : 4;
 
-      // If all games are finished, advance to next week
+      // If all games are finished, advance to next week or next season type
       if (allGamesFinished && data.events && data.events.length > 0) {
-        week = Math.min(week + 1, maxWeek);
+        // If we're at the end of regular season, transition to playoffs
+        if (seasonType === 2 && week >= maxWeek) {
+          seasonType = 3; // Move to playoffs
+          week = 1; // Start at Wild Card round
+        }
+        // Otherwise just advance to next week
+        else {
+          week = Math.min(week + 1, maxWeek);
+        }
       }
 
       return {

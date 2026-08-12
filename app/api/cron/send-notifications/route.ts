@@ -68,7 +68,9 @@ export async function GET(request: Request) {
   const week = getCurrentWeekNumber(seasonYear, seasonType);
 
   if (isTest) {
-    const subscriptions = getAllSubscriptions();
+    const filterUserId = searchParams.get('userId') ? parseInt(searchParams.get('userId')!) : null;
+    let subscriptions = getAllSubscriptions();
+    if (filterUserId) subscriptions = subscriptions.filter((s) => s.userId === filterUserId);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     let sent = 0;
     for (const sub of subscriptions) {

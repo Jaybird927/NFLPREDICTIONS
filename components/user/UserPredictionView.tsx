@@ -5,6 +5,7 @@ import { Game, User, Prediction } from '@/types';
 import { PredictionGrid } from '@/components/prediction/PredictionGrid';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { TipsModal } from '@/components/user/TipsModal';
+import { NotificationOnboarding } from '@/components/user/NotificationOnboarding';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
 async function subscribeToPush(authToken: string): Promise<boolean> {
@@ -376,6 +377,12 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
 
       {/* Tips Modal */}
       {showTips && <TipsModal onClose={() => setShowTips(false)} />}
+
+      {/* First-visit notification onboarding */}
+      <NotificationOnboarding
+        authToken={authToken}
+        onSubscribed={() => setNotifStatus('subscribed')}
+      />
     </main>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'notifOnboardingSeen';
+const STORAGE_KEY = 'notifOnboardingSeen_v2';
 
 interface Props {
   authToken: string;

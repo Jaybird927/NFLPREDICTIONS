@@ -70,15 +70,29 @@ export function TipsModal({ onClose }: TipsModalProps) {
                 <li>Bookmark this page to easily access your picks</li>
               </ul>
             </section>
+
+            <section>
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">Notifications</h3>
+              <ul className="list-disc pl-5 space-y-2">
+                <li>Tap <strong>Enable Notifications</strong> to get reminders before picks lock each week</li>
+                <li>You'll get notified 2 days, 1 day, 2 hours, and 1 hour before the first game</li>
+                <li>Once you've submitted all your picks for the week, reminders will stop automatically</li>
+                <li><strong>On iPhone:</strong> you must first tap Share → <em>Add to Home Screen</em> in Safari, then open the app from your home screen before enabling notifications</li>
+                <li><strong>On Android:</strong> just tap Enable Notifications and allow when prompted</li>
+              </ul>
+            </section>
           </div>
 
-          <div className="mt-6 flex justify-end">
-            <button
-              onClick={onClose}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Got it!
-            </button>
+          <div className="mt-6 space-y-3">
+            <p className="text-center text-gray-500 text-sm">Having trouble? Contact Jack!</p>
+            <div className="flex justify-end">
+              <button
+                onClick={onClose}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Got it!
+              </button>
+            </div>
           </div>
         </div>
       </div>

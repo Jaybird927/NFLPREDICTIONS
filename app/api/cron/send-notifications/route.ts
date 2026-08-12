@@ -8,6 +8,7 @@ import {
   getUserPickCountForWeek,
   NotificationType,
 } from '@/lib/repositories/notifications';
+import { getUserById } from '@/lib/repositories/users';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 import db from '@/lib/db';
 
@@ -71,10 +72,12 @@ export async function GET(request: Request) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
     let sent = 0;
     for (const sub of subscriptions) {
+      const user = getUserById(sub.userId);
+      const userUrl = user?.authToken ? `${appUrl}/user/${user.authToken}` : appUrl;
       const payload = JSON.stringify({
         title: 'NFL Picks — Test Notification',
         body: 'Notifications are working! You\'ll be reminded before picks lock each week.',
-        url: appUrl,
+        url: userUrl,
       });
       try {
         await webpush.sendNotification(
@@ -131,10 +134,13 @@ export async function GET(request: Request) {
         ? ['Wild Card', 'Divisional', 'Conference', 'Pro Bowl', 'Super Bowl'][week - 1] ?? `Playoff Week ${week}`
         : `Week ${week}`;
 
+      const user = getUserById(sub.userId);
+      const userUrl = user?.authToken ? `${appUrl}/user/${user.authToken}` : appUrl;
+
       const payload = JSON.stringify({
         title: 'NFL Picks Reminder',
         body: `${threshold.label} left to make your picks for ${weekLabel}! ${picks}/${total} done.`,
-        url: `${appUrl}`,
+        url: userUrl,
       });
 
       try {

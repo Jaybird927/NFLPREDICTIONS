@@ -59,9 +59,35 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const isTest = searchParams.get('test') === 'true';
+
   const seasonYear = CURRENT_SEASON;
   const seasonType = CURRENT_SEASON_TYPE;
   const week = getCurrentWeekNumber(seasonYear, seasonType);
+
+  if (isTest) {
+    const subscriptions = getAllSubscriptions();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    let sent = 0;
+    for (const sub of subscriptions) {
+      const payload = JSON.stringify({
+        title: 'NFL Picks — Test Notification',
+        body: 'Notifications are working! You\'ll be reminded before picks lock each week.',
+        url: appUrl,
+      });
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payload
+        );
+        sent++;
+      } catch (err) {
+        console.error('Test push failed for', sub.endpoint, err);
+      }
+    }
+    return NextResponse.json({ success: true, test: true, sent });
+  }
 
   if (week === null) {
     return NextResponse.json({ message: 'No upcoming games found', sent: 0 });

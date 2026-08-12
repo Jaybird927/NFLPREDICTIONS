@@ -77,8 +77,9 @@ export function TipsModal({ onClose }: TipsModalProps) {
                 <li>Tap <strong>Enable Notifications</strong> to get reminders before picks lock each week</li>
                 <li>You'll get notified 2 days, 1 day, 2 hours, and 1 hour before the first game</li>
                 <li>Once you've submitted all your picks for the week, reminders will stop automatically</li>
-                <li><strong>On iPhone:</strong> you must first tap Share → <em>Add to Home Screen</em> in Safari, then open the app from your home screen before enabling notifications</li>
+                <li><strong>On Mac / Mac Mini:</strong> just tap Enable Notifications and allow when prompted</li>
                 <li><strong>On Android:</strong> just tap Enable Notifications and allow when prompted</li>
+                <li><strong>On iPhone / iPad:</strong> you must first tap Share → <em>Add to Home Screen</em> in Safari, then open the app from your home screen before enabling notifications</li>
               </ul>
             </section>
           </div>

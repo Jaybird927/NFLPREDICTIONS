@@ -82,3 +82,31 @@ CREATE TABLE IF NOT EXISTS leaderboard_stats (
 
 CREATE INDEX IF NOT EXISTS idx_season_stats ON leaderboard_stats(season_year, season_type);
 CREATE INDEX IF NOT EXISTS idx_win_percentage ON leaderboard_stats(win_percentage DESC);
+
+-- Push notification subscriptions
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions(user_id);
+
+-- Notification send log (prevents duplicate notifications per window)
+CREATE TABLE IF NOT EXISTS notification_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  season_year INTEGER NOT NULL,
+  season_type INTEGER NOT NULL,
+  week INTEGER NOT NULL,
+  notification_type TEXT NOT NULL CHECK(notification_type IN ('2days','1day','2hours','1hour')),
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(user_id, season_year, season_type, week, notification_type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_notif_log ON notification_logs(season_year, season_type, week);

@@ -1,0 +1,15 @@
+name: Send Pick Notifications
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:      # allow manual trigger from GitHub UI
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notifications
+        run: |
+          curl -sf -X GET "${{ secrets.RAILWAY_APP_URL }}/api/cron/send-notifications" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

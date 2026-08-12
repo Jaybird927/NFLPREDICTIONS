@@ -10,7 +10,7 @@ export const GAME_STATUS = {
   FINAL: 'final',
 } as const;
 
-export const CURRENT_SEASON = parseInt(process.env.CURRENT_SEASON || '2025');
+export const CURRENT_SEASON = parseInt(process.env.CURRENT_SEASON || '2026');
 export const CURRENT_SEASON_TYPE = parseInt(process.env.CURRENT_SEASON_TYPE || '2');
 
 export const ESPN_API_BASE_URL = process.env.ESPN_API_BASE_URL || 'https://site.api.espn.com/apis/site/v2/sports/football/nfl';

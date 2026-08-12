@@ -7,6 +7,54 @@ import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { TipsModal } from '@/components/user/TipsModal';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
+async function subscribeToPush(authToken: string): Promise<boolean> {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return false;
+
+  const registration = await navigator.serviceWorker.ready;
+  const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!vapidKey) return false;
+
+  const sub = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: vapidKey,
+  });
+
+  const subJson = sub.toJSON();
+  const res = await fetch('/api/notifications/subscribe', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify(subJson),
+  });
+
+  return res.ok;
+}
+
+async function unsubscribeFromPush(authToken: string): Promise<boolean> {
+  if (!('serviceWorker' in navigator)) return false;
+
+  const registration = await navigator.serviceWorker.ready;
+  const sub = await registration.pushManager.getSubscription();
+  if (!sub) return true;
+
+  await fetch('/api/notifications/subscribe', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: JSON.stringify({ endpoint: sub.endpoint }),
+  });
+
+  await sub.unsubscribe();
+  return true;
+}
+
 interface UserPredictionViewProps {
   userId: number;
   displayName: string;
@@ -23,6 +71,39 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [showTips, setShowTips] = useState(false);
+  const [notifStatus, setNotifStatus] = useState<'unknown' | 'subscribed' | 'denied' | 'unsupported'>('unknown');
+
+  // Check notification subscription status on mount
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setNotifStatus('unsupported');
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      setNotifStatus('denied');
+      return;
+    }
+    navigator.serviceWorker.ready.then((reg) =>
+      reg.pushManager.getSubscription().then((sub) => {
+        setNotifStatus(sub ? 'subscribed' : 'unknown');
+      })
+    );
+  }, []);
+
+  const handleToggleNotifications = async () => {
+    if (notifStatus === 'subscribed') {
+      await unsubscribeFromPush(authToken);
+      setNotifStatus('unknown');
+    } else {
+      const ok = await subscribeToPush(authToken);
+      if (ok) {
+        setNotifStatus('subscribed');
+      } else if (Notification.permission === 'denied') {
+        setNotifStatus('denied');
+        alert('Notifications are blocked. Please enable them in your browser settings.');
+      }
+    }
+  };
 
   // Load current week on mount
   useEffect(() => {
@@ -243,7 +324,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 flex-wrap">
           <button
             onClick={() => setShowTips(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -256,6 +337,22 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
           >
             Sync Scores Now
           </button>
+          {notifStatus !== 'unsupported' && (
+            <button
+              onClick={handleToggleNotifications}
+              disabled={notifStatus === 'denied'}
+              title={notifStatus === 'denied' ? 'Notifications blocked in browser settings' : undefined}
+              className={`px-4 py-2 rounded-lg ${
+                notifStatus === 'subscribed'
+                  ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                  : notifStatus === 'denied'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
+              }`}
+            >
+              {notifStatus === 'subscribed' ? 'Notifications On' : notifStatus === 'denied' ? 'Notifications Blocked' : 'Enable Notifications'}
+            </button>
+          )}
         </div>
 
         {/* Predictions Grid */}

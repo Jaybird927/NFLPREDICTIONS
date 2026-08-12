@@ -49,6 +49,12 @@ export class ESPNClient {
 
       let week = data.week?.number || 1;
 
+      // Skip preseason — treat it as regular season week 1
+      if (seasonType === 1) {
+        seasonType = 2;
+        week = 1;
+      }
+
       // Check if all games in current week are finished
       const allGamesFinished = data.events?.every(event => {
         const state = event.status?.type?.state;
@@ -57,7 +63,7 @@ export class ESPNClient {
 
       // Determine max week based on season type
       // Regular season: 18 weeks, Playoffs: 5 weeks (Wild Card, Divisional, Conference, Pro Bowl, Super Bowl)
-      const maxWeek = seasonType === 2 ? 18 : seasonType === 3 ? 5 : 4;
+      const maxWeek = seasonType === 2 ? 18 : 5;
 
       // If all games are finished, advance to next week or next season type
       if (allGamesFinished && data.events && data.events.length > 0) {

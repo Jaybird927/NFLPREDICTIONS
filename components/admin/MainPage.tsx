@@ -227,19 +227,16 @@ export default function MainPage({ adminToken }: MainPageProps) {
   // Helper to get season type label
   const getSeasonTypeLabel = (type: number) => {
     switch (type) {
-      case 1: return 'Preseason';
       case 2: return 'Regular Season';
       case 3: return 'Playoffs';
       default: return 'Season';
     }
   };
 
-  // Helper to get max week for current season type
   const getMaxWeek = () => {
     switch (currentSeasonType) {
-      case 1: return 4; // Preseason
-      case 2: return 18; // Regular season
-      case 3: return 5; // Playoffs
+      case 2: return 18;
+      case 3: return 5;
       default: return 18;
     }
   };

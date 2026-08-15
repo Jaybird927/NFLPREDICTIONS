@@ -89,10 +89,13 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
     }
     navigator.serviceWorker.ready.then((reg) =>
       reg.pushManager.getSubscription().then((sub) => {
-        setNotifStatus(sub ? 'subscribed' : 'unknown');
+        if (!sub) { setNotifStatus('unknown'); return; }
+        // Only show as subscribed if this device subscribed as THIS user
+        const subscribedAs = localStorage.getItem('notifSubscribedUserId');
+        setNotifStatus(subscribedAs === String(userId) ? 'subscribed' : 'unknown');
       })
     );
-  }, []);
+  }, [userId]);
 
   const handleToggleNotifications = async () => {
     if (notifStatus === 'subscribed') {

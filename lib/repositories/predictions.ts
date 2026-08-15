@@ -10,6 +10,7 @@ function rowToPrediction(row: PredictionRow): Prediction {
     gameId: row.game_id,
     predictedWinnerTeamId: row.predicted_winner_team_id,
     isCorrect: row.is_correct === null ? null : row.is_correct === 1,
+    isLatePass: row.is_late_pass === 1,
     createdAt: parseDbDate(row.created_at),
     updatedAt: parseDbDate(row.updated_at),
   };

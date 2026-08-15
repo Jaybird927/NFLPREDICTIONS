@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   game_id INTEGER NOT NULL,
   predicted_winner_team_id TEXT NOT NULL,
   is_correct BOOLEAN DEFAULT NULL,
+  is_late_pass BOOLEAN DEFAULT 0,
 
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -110,3 +111,19 @@ CREATE TABLE IF NOT EXISTS notification_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_notif_log ON notification_logs(season_year, season_type, week);
+
+-- Special passes (thirty_minute and late)
+CREATE TABLE IF NOT EXISTS special_passes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  pass_type TEXT NOT NULL CHECK(pass_type IN ('thirty_minute', 'late')),
+  season_year INTEGER NOT NULL,
+  season_type INTEGER NOT NULL,
+  used_game_id INTEGER,        -- thirty_minute: game it was used on
+  applied_week INTEGER,        -- late: week it was applied to
+  awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (used_game_id) REFERENCES games(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_passes_user ON special_passes(user_id, season_year, season_type);

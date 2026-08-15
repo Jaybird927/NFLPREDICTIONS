@@ -12,11 +12,12 @@ interface PredictionGridProps {
   onSave: (predictions: Array<{ userId: number; gameId: number; predictedWinnerTeamId: string | null }>) => Promise<void>;
   isAdmin: boolean;
   onRequestAuth: () => void;
-  authToken?: string; // New: Auth token for API requests
-  restrictToUser?: number; // New: Only show this user's column
+  authToken?: string;
+  restrictToUser?: number;
+  thirtyMinPass?: { hasPass: boolean; usedGameId: number | null };
 }
 
-export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser }: PredictionGridProps) {
+export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, thirtyMinPass }: PredictionGridProps) {
   // Filter users if restrictToUser is set
   const displayUsers = restrictToUser ? users.filter(u => u.id === restrictToUser) : users;
   // Build a map for quick lookup: "userId-gameId" -> prediction
@@ -38,15 +39,12 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
     setSelections(map);
   }, [predictions]);
 
-  const handleCellChange = async (userId: number, gameId: number, teamId: string | null, isLocked: boolean) => {
-    // For restricted users (non-admin), show locked message for locked games
-    if (isLocked && !isAdmin) {
+  const handleCellChange = async (userId: number, gameId: number, teamId: string | null, isLocked: boolean, inGrace: boolean = false) => {
+    if (isLocked && !isAdmin && !inGrace) {
       if (restrictToUser) {
-        // Regular user trying to modify locked game - show message
         alert('This game has already started. Picks are locked.');
         return;
       }
-      // Admin view - require password
       onRequestAuth();
       return;
     }
@@ -117,10 +115,26 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
           <tbody>
             {games.map((game) => {
               const locked = isGameLocked(game.gameDate);
+              const now = Date.now();
+              const msSinceStart = now - new Date(game.gameDate).getTime();
+              const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && (thirtyMinPass?.hasPass ?? false);
+              const isEffectivelyLocked = locked && !inGraceWindow;
+
+              // Row background based on pass usage
+              const usedThirtyMin = thirtyMinPass?.usedGameId === game.id;
+              // Check if any prediction for this game used a late pass
+              const hasLatePassPred = predictions.some(p => p.gameId === game.id && p.isLatePass);
+              const rowBg = usedThirtyMin
+                ? 'bg-yellow-50'
+                : hasLatePassPred
+                ? 'bg-red-50'
+                : locked
+                ? 'bg-gray-50'
+                : '';
 
               return (
-                <tr key={game.id} className={locked ? 'bg-gray-50' : ''}>
-                  <td className="sticky left-0 z-10 bg-white border border-gray-300 px-4 py-2 text-sm">
+                <tr key={game.id} className={rowBg}>
+                  <td className={`sticky left-0 z-10 border border-gray-300 px-4 py-2 text-sm ${usedThirtyMin ? 'bg-yellow-50' : hasLatePassPred ? 'bg-red-50' : 'bg-white'}`}>
                     <div className="flex flex-col">
                       <div className="font-medium">
                         {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
@@ -128,6 +142,15 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                       <div className="text-xs text-gray-500">
                         {formatGameTime(game.gameDate)}
                       </div>
+                      {inGraceWindow && (
+                        <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min pass active</div>
+                      )}
+                      {usedThirtyMin && (
+                        <div className="text-xs text-yellow-600 font-semibold">30-min pass used</div>
+                      )}
+                      {hasLatePassPred && (
+                        <div className="text-xs text-red-500 font-semibold">🎲 Late pass applied</div>
+                      )}
                       {game.gameStatus !== 'scheduled' && (
                         <div className="text-xs font-semibold mt-1">
                           {game.awayTeam.abbreviation} {game.awayScore} - {game.homeScore}{' '}
@@ -146,16 +169,22 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
 
                     return (
                       <td key={key} className="border border-gray-300 px-2 py-2 text-center">
-                        <div className="flex justify-center">
+                        <div className="flex flex-col items-center gap-0.5">
                           <PredictionCell
                             homeTeam={game.homeTeam}
                             awayTeam={game.awayTeam}
                             selectedTeamId={selectedTeamId}
-                            isLocked={locked}
+                            isLocked={isEffectivelyLocked}
                             isCorrect={prediction?.isCorrect}
                             winnerTeamId={game.winnerTeamId}
-                            onChange={(teamId) => handleCellChange(user.id, game.id, teamId, locked)}
+                            onChange={(teamId) => handleCellChange(user.id, game.id, teamId, locked, inGraceWindow)}
                           />
+                          {inGraceWindow && restrictToUser === user.id && (
+                            <span className="text-xs text-yellow-700 font-semibold">⏱ 30-min pass</span>
+                          )}
+                          {prediction?.isLatePass && (
+                            <span className="text-xs text-red-600 font-semibold">🎲 Late pass</span>
+                          )}
                         </div>
                       </td>
                     );

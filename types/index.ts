@@ -84,6 +84,7 @@ export interface Prediction {
   gameId: number;
   predictedWinnerTeamId: string;
   isCorrect?: boolean | null;
+  isLatePass?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -93,7 +94,8 @@ export interface PredictionRow {
   user_id: number;
   game_id: number;
   predicted_winner_team_id: string;
-  is_correct: number | null; // SQLite stores boolean as 0/1
+  is_correct: number | null;
+  is_late_pass: number;
   created_at: string;
   updated_at: string;
 }

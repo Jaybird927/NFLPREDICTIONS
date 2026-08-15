@@ -67,6 +67,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [thirtyMinPass, setThirtyMinPass] = useState<{ hasPass: boolean; usedGameId: number | null }>({ hasPass: false, usedGameId: null });
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'week' | 'season'>('week');
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
@@ -165,11 +166,12 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
       // Load games and predictions
       const gamesRes = await fetch(
         `/api/games?week=${currentWeek}&seasonYear=${CURRENT_SEASON}&seasonType=${currentSeasonType}`,
-        { cache: 'no-store' }
+        { cache: 'no-store', headers: { Authorization: `Bearer ${authToken}` } }
       );
       const gamesData = await gamesRes.json();
       setGames(gamesData.games);
       setPredictions(gamesData.predictions);
+      setThirtyMinPass(gamesData.thirtyMinPass ?? { hasPass: false, usedGameId: null });
 
       // Only need the current user for the grid
       setUsers([{ id: userId, name: '', displayName, createdAt: new Date(), updatedAt: new Date() }]);
@@ -375,6 +377,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             onRequestAuth={() => {}}
             authToken={authToken}
             restrictToUser={userId}
+            thirtyMinPass={thirtyMinPass}
           />
         </div>
 

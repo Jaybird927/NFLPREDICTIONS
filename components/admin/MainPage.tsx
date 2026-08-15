@@ -17,6 +17,8 @@ export default function MainPage({ adminToken }: MainPageProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
+  const [leaderboardTab, setLeaderboardTab] = useState<'week' | 'season'>('week');
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
   const [currentSeasonType, setCurrentSeasonType] = useState<number>(CURRENT_SEASON_TYPE);
   const [isLoading, setIsLoading] = useState(true);
@@ -95,13 +97,21 @@ export default function MainPage({ adminToken }: MainPageProps) {
       const usersData = await usersRes.json();
       setUsers(usersData);
 
-      // Load leaderboard
+      // Load season leaderboard
       const leaderboardRes = await fetch(
         `/api/leaderboard?seasonYear=${CURRENT_SEASON}&seasonType=${currentSeasonType}`,
         { cache: 'no-store' }
       );
       const leaderboardData = await leaderboardRes.json();
       setLeaderboard(leaderboardData);
+
+      // Load weekly leaderboard
+      const weeklyRes = await fetch(
+        `/api/leaderboard?seasonYear=${CURRENT_SEASON}&seasonType=${currentSeasonType}&week=${currentWeek}`,
+        { cache: 'no-store' }
+      );
+      const weeklyData = await weeklyRes.json();
+      setWeeklyLeaderboard(weeklyData);
 
       setLastUpdate(new Date());
     } catch (error) {
@@ -406,8 +416,24 @@ export default function MainPage({ adminToken }: MainPageProps) {
 
         {/* Leaderboard */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
-          <LeaderboardTable entries={leaderboard} />
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Leaderboard</h2>
+            <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+              <button
+                onClick={() => setLeaderboardTab('week')}
+                className={`px-4 py-1.5 ${leaderboardTab === 'week' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                {getWeekLabel(currentWeek)}
+              </button>
+              <button
+                onClick={() => setLeaderboardTab('season')}
+                className={`px-4 py-1.5 border-l border-gray-300 ${leaderboardTab === 'season' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                All Season
+              </button>
+            </div>
+          </div>
+          <LeaderboardTable entries={leaderboardTab === 'week' ? weeklyLeaderboard : leaderboard} />
         </div>
       </div>
 

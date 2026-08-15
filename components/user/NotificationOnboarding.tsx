@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'notifOnboardingSeen_v2';
-
 interface Props {
   authToken: string;
+  userId: number;
   onSubscribed: () => void;
+}
+
+function storageKey(userId: number) {
+  return `notifOnboardingSeen_v2_${userId}`;
 }
 
 function getDeviceType(): 'ios-browser' | 'ios-standalone' | 'other' {
@@ -17,23 +20,27 @@ function getDeviceType(): 'ios-browser' | 'ios-standalone' | 'other' {
   return (navigator as any).standalone ? 'ios-standalone' : 'ios-browser';
 }
 
-export function NotificationOnboarding({ authToken, onSubscribed }: Props) {
+export function NotificationOnboarding({ authToken, userId, onSubscribed }: Props) {
   const [visible, setVisible] = useState(false);
   const [deviceType, setDeviceType] = useState<'ios-browser' | 'ios-standalone' | 'other'>('other');
 
   useEffect(() => {
-    if (localStorage.getItem(STORAGE_KEY)) return;
+    // Don't show if this device is already subscribed as a different user
+    const subscribedAs = localStorage.getItem('notifSubscribedUserId');
+    if (subscribedAs && parseInt(subscribedAs) !== userId) return;
+
+    if (localStorage.getItem(storageKey(userId))) return;
     if (!('Notification' in window)) return;
     if (Notification.permission === 'granted') {
-      localStorage.setItem(STORAGE_KEY, 'true');
+      localStorage.setItem(storageKey(userId), 'true');
       return;
     }
     setDeviceType(getDeviceType());
     setVisible(true);
-  }, []);
+  }, [userId]);
 
   const dismiss = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    localStorage.setItem(storageKey(userId), 'true');
     setVisible(false);
   };
 
@@ -54,6 +61,7 @@ export function NotificationOnboarding({ authToken, onSubscribed }: Props) {
               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
               body: JSON.stringify(sub.toJSON()),
             });
+            localStorage.setItem('notifSubscribedUserId', userId.toString());
             onSubscribed();
           } catch (err) {
             console.error('Failed to subscribe:', err);

@@ -410,6 +410,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
       {/* First-visit notification onboarding */}
       <NotificationOnboarding
         authToken={authToken}
+        userId={userId}
         onSubscribed={() => setNotifStatus('subscribed')}
       />
     </main>

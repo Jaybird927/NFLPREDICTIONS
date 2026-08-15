@@ -345,22 +345,22 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
           >
             Sync Scores Now
           </button>
-          {notifStatus !== 'unsupported' && (
-            <button
-              onClick={handleToggleNotifications}
-              disabled={notifStatus === 'denied'}
-              title={notifStatus === 'denied' ? 'Notifications blocked in browser settings' : undefined}
-              className={`px-4 py-2 rounded-lg ${
-                notifStatus === 'subscribed'
-                  ? 'bg-yellow-500 text-white hover:bg-yellow-600'
-                  : notifStatus === 'denied'
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-purple-600 text-white hover:bg-purple-700'
-              }`}
-            >
-              {notifStatus === 'subscribed' ? 'Notifications On' : notifStatus === 'denied' ? 'Notifications Blocked' : 'Enable Notifications'}
-            </button>
-          )}
+          <button
+            onClick={notifStatus === 'unsupported' ? () => setShowTips(true) : handleToggleNotifications}
+            disabled={notifStatus === 'denied'}
+            title={notifStatus === 'denied' ? 'Notifications blocked in browser settings' : undefined}
+            className={`px-4 py-2 rounded-lg ${
+              notifStatus === 'subscribed'
+                ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                : notifStatus === 'denied'
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : notifStatus === 'unsupported'
+                ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+            {notifStatus === 'subscribed' ? 'Notifications On' : notifStatus === 'denied' ? 'Notifications Blocked' : notifStatus === 'unsupported' ? 'Notifications (see Tips)' : 'Enable Notifications'}
+          </button>
         </div>
 
         {/* Predictions Grid */}

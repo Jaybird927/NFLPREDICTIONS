@@ -6,6 +6,7 @@ import { PredictionGrid } from '@/components/prediction/PredictionGrid';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { TipsModal } from '@/components/user/TipsModal';
 import { NotificationOnboarding } from '@/components/user/NotificationOnboarding';
+import { RewardsBanner } from '@/components/user/RewardsBanner';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
 async function subscribeToPush(authToken: string): Promise<boolean> {
@@ -373,6 +374,9 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             {notifStatus === 'subscribed' ? 'Notifications On' : notifStatus === 'denied' ? 'Notifications Blocked' : notifStatus === 'unsupported' ? 'Notifications (see Tips)' : 'Enable Notifications'}
           </button>
         </div>
+
+        {/* Rewards */}
+        <RewardsBanner authToken={authToken} />
 
         {/* Predictions Grid */}
         <div className="bg-white rounded-lg shadow p-6">

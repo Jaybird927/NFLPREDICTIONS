@@ -51,11 +51,17 @@ export async function POST(request: Request) {
             );
           }
 
-          // Within 30-min window — check and consume the pass
+          // Within 30-min window — check pass and that this game was designated
           const pass = getUnusedThirtyMinutePass(user.id, game.seasonYear);
           if (!pass) {
             return NextResponse.json(
               { error: 'Game has already started and you have no 30-minute pass available' },
+              { status: 403 }
+            );
+          }
+          if (pass.designatedGameId !== game.id) {
+            return NextResponse.json(
+              { error: 'Your 30-minute pass is designated for a different game' },
               { status: 403 }
             );
           }

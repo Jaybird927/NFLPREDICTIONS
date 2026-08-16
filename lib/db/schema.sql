@@ -119,7 +119,8 @@ CREATE TABLE IF NOT EXISTS special_passes (
   pass_type TEXT NOT NULL CHECK(pass_type IN ('thirty_minute', 'late')),
   season_year INTEGER NOT NULL,
   season_type INTEGER NOT NULL,
-  used_game_id INTEGER,        -- thirty_minute: game it was used on
+  designated_game_id INTEGER,  -- thirty_minute: game chosen before kickoff
+  used_game_id INTEGER,        -- thirty_minute: game it was actually used on
   applied_week INTEGER,        -- late: week it was applied to
   awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,

@@ -14,10 +14,11 @@ interface PredictionGridProps {
   onRequestAuth: () => void;
   authToken?: string;
   restrictToUser?: number;
-  thirtyMinPass?: { hasPass: boolean; usedGameId: number | null };
+  thirtyMinPass?: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null };
+  onPassUpdate?: () => void;
 }
 
-export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, thirtyMinPass }: PredictionGridProps) {
+export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, thirtyMinPass, onPassUpdate }: PredictionGridProps) {
   // Filter users if restrictToUser is set
   const displayUsers = restrictToUser ? users.filter(u => u.id === restrictToUser) : users;
   // Build a map for quick lookup: "userId-gameId" -> prediction
@@ -117,24 +118,41 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               const locked = isGameLocked(game.gameDate);
               const now = Date.now();
               const msSinceStart = now - new Date(game.gameDate).getTime();
-              const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && (thirtyMinPass?.hasPass ?? false);
+              const isDesignated = thirtyMinPass?.designatedGameId === game.id;
+              const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && isDesignated;
               const isEffectivelyLocked = locked && !inGraceWindow;
 
-              // Row background based on pass usage
               const usedThirtyMin = thirtyMinPass?.usedGameId === game.id;
-              // Check if any prediction for this game used a late pass
               const hasLatePassPred = predictions.some(p => p.gameId === game.id && p.isLatePass);
-              const rowBg = usedThirtyMin
-                ? 'bg-yellow-50'
-                : hasLatePassPred
-                ? 'bg-red-50'
-                : locked
-                ? 'bg-gray-50'
-                : '';
+              const isYellow = usedThirtyMin || isDesignated;
+              const rowBg = isYellow ? 'bg-yellow-50' : hasLatePassPred ? 'bg-red-50' : locked ? 'bg-gray-50' : '';
+              const stickyBg = isYellow ? 'bg-yellow-50' : hasLatePassPred ? 'bg-red-50' : 'bg-white';
+
+              const canDesignate = !locked && thirtyMinPass?.hasPass && !thirtyMinPass.usedGameId && thirtyMinPass.designatedGameId === null;
+              const canUndesignate = !locked && isDesignated && !thirtyMinPass?.usedGameId;
+
+              const handleDesignate = async () => {
+                if (!authToken) return;
+                await fetch('/api/passes/designate', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                  body: JSON.stringify({ gameId: game.id }),
+                });
+                onPassUpdate?.();
+              };
+
+              const handleUndesignate = async () => {
+                if (!authToken) return;
+                await fetch('/api/passes/designate', {
+                  method: 'DELETE',
+                  headers: { Authorization: `Bearer ${authToken}` },
+                });
+                onPassUpdate?.();
+              };
 
               return (
                 <tr key={game.id} className={rowBg}>
-                  <td className={`sticky left-0 z-10 border border-gray-300 px-4 py-2 text-sm ${usedThirtyMin ? 'bg-yellow-50' : hasLatePassPred ? 'bg-red-50' : 'bg-white'}`}>
+                  <td className={`sticky left-0 z-10 border border-gray-300 px-4 py-2 text-sm ${stickyBg}`}>
                     <div className="flex flex-col">
                       <div className="font-medium">
                         {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
@@ -142,11 +160,27 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                       <div className="text-xs text-gray-500">
                         {formatGameTime(game.gameDate)}
                       </div>
+                      {canDesignate && (
+                        <button
+                          onClick={handleDesignate}
+                          className="mt-1 text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold px-2 py-0.5 rounded"
+                        >
+                          ⏱ Use 30-min Pass
+                        </button>
+                      )}
+                      {canUndesignate && (
+                        <button
+                          onClick={handleUndesignate}
+                          className="mt-1 text-xs bg-yellow-200 hover:bg-yellow-300 text-yellow-800 font-semibold px-2 py-0.5 rounded"
+                        >
+                          ⏱ Pass designated — cancel?
+                        </button>
+                      )}
                       {inGraceWindow && (
-                        <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min pass active</div>
+                        <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min window open!</div>
                       )}
                       {usedThirtyMin && (
-                        <div className="text-xs text-yellow-600 font-semibold">30-min pass used</div>
+                        <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min pass used</div>
                       )}
                       {hasLatePassPred && (
                         <div className="text-xs text-red-500 font-semibold">🎲 Late pass applied</div>

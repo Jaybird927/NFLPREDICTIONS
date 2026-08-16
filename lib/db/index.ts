@@ -23,8 +23,16 @@ export function initializeDatabase() {
   const schemaPath = path.join(process.cwd(), 'lib', 'db', 'schema.sql');
   const schema = fs.readFileSync(schemaPath, 'utf-8');
 
-  // Execute schema
   db.exec(schema);
+
+  // Safe incremental migrations
+  const migrations = [
+    `ALTER TABLE special_passes ADD COLUMN designated_game_id INTEGER REFERENCES games(id)`,
+    `ALTER TABLE predictions ADD COLUMN is_late_pass BOOLEAN DEFAULT 0`,
+  ];
+  for (const sql of migrations) {
+    try { db.exec(sql); } catch { /* column already exists */ }
+  }
 
   console.log('Database initialized successfully');
 }

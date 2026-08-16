@@ -6,6 +6,7 @@ export interface SpecialPass {
   passType: 'thirty_minute' | 'late';
   seasonYear: number;
   seasonType: number;
+  designatedGameId: number | null;
   usedGameId: number | null;
   appliedWeek: number | null;
 }
@@ -16,6 +17,7 @@ interface PassRow {
   pass_type: 'thirty_minute' | 'late';
   season_year: number;
   season_type: number;
+  designated_game_id: number | null;
   used_game_id: number | null;
   applied_week: number | null;
 }
@@ -27,6 +29,7 @@ function rowToPass(row: PassRow): SpecialPass {
     passType: row.pass_type,
     seasonYear: row.season_year,
     seasonType: row.season_type,
+    designatedGameId: row.designated_game_id,
     usedGameId: row.used_game_id,
     appliedWeek: row.applied_week,
   };
@@ -68,10 +71,22 @@ export function getUsedThirtyMinutePass(
   return row ? rowToPass(row) : null;
 }
 
+export function designateThirtyMinutePass(passId: number, gameId: number): void {
+  db.prepare(`
+    UPDATE special_passes SET designated_game_id = ? WHERE id = ?
+  `).run(gameId, passId);
+}
+
+export function undesignateThirtyMinutePass(passId: number): void {
+  db.prepare(`
+    UPDATE special_passes SET designated_game_id = NULL WHERE id = ?
+  `).run(passId);
+}
+
 export function useThirtyMinutePass(passId: number, gameId: number): void {
   db.prepare(`
-    UPDATE special_passes SET used_game_id = ? WHERE id = ?
-  `).run(gameId, passId);
+    UPDATE special_passes SET used_game_id = ?, designated_game_id = ? WHERE id = ?
+  `).run(gameId, gameId, passId);
 }
 
 export function getUnusedLatePass(

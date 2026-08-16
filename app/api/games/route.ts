@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     // Resolve pass info for the requesting user if auth token provided
     const authHeader = request.headers.get('authorization');
-    let thirtyMinPassInfo: { hasPass: boolean; usedGameId: number | null } = { hasPass: false, usedGameId: null };
+    let thirtyMinPassInfo: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null } = { hasPass: false, designatedGameId: null, usedGameId: null };
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
@@ -28,6 +28,7 @@ export async function GET(request: Request) {
         const used = getUsedThirtyMinutePass(user.id, seasonYear);
         thirtyMinPassInfo = {
           hasPass: unused !== null,
+          designatedGameId: unused?.designatedGameId ?? null,
           usedGameId: used?.usedGameId ?? null,
         };
       }

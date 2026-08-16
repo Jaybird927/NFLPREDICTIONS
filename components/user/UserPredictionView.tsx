@@ -68,7 +68,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [thirtyMinPass, setThirtyMinPass] = useState<{ hasPass: boolean; usedGameId: number | null }>({ hasPass: false, usedGameId: null });
+  const [thirtyMinPass, setThirtyMinPass] = useState<{ hasPass: boolean; designatedGameId: number | null; usedGameId: number | null }>({ hasPass: false, designatedGameId: null, usedGameId: null });
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'week' | 'season'>('week');
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
@@ -391,6 +391,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             authToken={authToken}
             restrictToUser={userId}
             thirtyMinPass={thirtyMinPass}
+            onPassUpdate={loadData}
           />
         </div>
 

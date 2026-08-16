@@ -49,10 +49,9 @@ export class ESPNClient {
 
       let week = data.week?.number || 1;
 
-      // Skip preseason — treat it as regular season week 1
+      // Skip preseason entirely — return regular season week 1 and stop
       if (seasonType === 1) {
-        seasonType = 2;
-        week = 1;
+        return { seasonType: 2, week: 1, year: seasonData?.year || new Date().getFullYear() };
       }
 
       // Check if all games in current week are finished
@@ -62,18 +61,14 @@ export class ESPNClient {
       }) ?? false;
 
       // Determine max week based on season type
-      // Regular season: 18 weeks, Playoffs: 5 weeks (Wild Card, Divisional, Conference, Pro Bowl, Super Bowl)
       const maxWeek = seasonType === 2 ? 18 : 5;
 
       // If all games are finished, advance to next week or next season type
       if (allGamesFinished && data.events && data.events.length > 0) {
-        // If we're at the end of regular season, transition to playoffs
         if (seasonType === 2 && week >= maxWeek) {
-          seasonType = 3; // Move to playoffs
-          week = 1; // Start at Wild Card round
-        }
-        // Otherwise just advance to next week
-        else {
+          seasonType = 3;
+          week = 1;
+        } else {
           week = Math.min(week + 1, maxWeek);
         }
       }

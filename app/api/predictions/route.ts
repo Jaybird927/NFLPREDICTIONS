@@ -33,35 +33,23 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Forbidden - cannot modify other users predictions' }, { status: 403 });
       }
 
-      // Check if any pick is for a started game — allow if within 30-min pass window
+      // Check if any pick is for a started game — only allow if within designated 30-min pass window
       const user = getUserByToken(token);
       if (user) {
         for (const pred of predictions) {
+          if (pred.predictedWinnerTeamId === null) continue; // deletions are fine
           const game = getGameById(pred.gameId);
           if (!game) continue;
           const now = Date.now();
           const gameStarted = now > game.gameDate.getTime();
-          if (!gameStarted) continue;
+          if (!gameStarted) continue; // not started yet — allow
 
           const msSinceStart = now - game.gameDate.getTime();
-          if (msSinceStart > THIRTY_MINUTES_MS) {
-            return NextResponse.json(
-              { error: `Game has already started and the 30-minute window has passed` },
-              { status: 403 }
-            );
-          }
-
-          // Within 30-min window — check pass and that this game was designated
           const pass = getUnusedThirtyMinutePass(user.id, game.seasonYear);
-          if (!pass) {
+
+          if (!pass || pass.designatedGameId !== game.id || msSinceStart > THIRTY_MINUTES_MS) {
             return NextResponse.json(
-              { error: 'Game has already started and you have no 30-minute pass available' },
-              { status: 403 }
-            );
-          }
-          if (pass.designatedGameId !== game.id) {
-            return NextResponse.json(
-              { error: 'Your 30-minute pass is designated for a different game' },
+              { error: 'This game has already started. Your 30-minute pass must be designated for this game before kickoff.' },
               { status: 403 }
             );
           }

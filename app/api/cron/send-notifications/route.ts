@@ -69,6 +69,8 @@ export async function GET(request: Request) {
 
   if (isTest) {
     const filterUserId = searchParams.get('userId') ? parseInt(searchParams.get('userId')!) : null;
+    const customTitle = searchParams.get('title');
+    const customBody = searchParams.get('body');
     let subscriptions = getAllSubscriptions();
     if (filterUserId) subscriptions = subscriptions.filter((s) => s.userId === filterUserId);
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
@@ -77,8 +79,8 @@ export async function GET(request: Request) {
       const user = getUserById(sub.userId);
       const userUrl = user?.authToken ? `${appUrl}/user/${user.authToken}` : appUrl;
       const payload = JSON.stringify({
-        title: 'NFL Picks — Test Notification',
-        body: 'Notifications are working! You\'ll be reminded before picks lock each week.',
+        title: customTitle || 'NFL Picks — Test Notification',
+        body: customBody || 'Notifications are working! You\'ll be reminded before picks lock each week.',
         url: userUrl,
       });
       try {

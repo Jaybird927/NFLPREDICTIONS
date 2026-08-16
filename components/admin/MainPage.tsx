@@ -24,9 +24,6 @@ export default function MainPage({ adminToken }: MainPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [newUserName, setNewUserName] = useState('');
-  const [showTestGames, setShowTestGames] = useState(false);
-  const [testGames, setTestGames] = useState<any[]>([]);
-  const [testGameForm, setTestGameForm] = useState({ awayName: '', awayAbbr: '', homeName: '', homeAbbr: '', gameDate: '', gameTime: '', week: '1' });
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
@@ -168,44 +165,6 @@ export default function MainPage({ adminToken }: MainPageProps) {
     setShowUserManagement(false);
   };
 
-  const loadTestGames = async () => {
-    const res = await fetch('/api/admin/test-game', { headers: { Authorization: `Bearer ${adminToken}` } });
-    const data = await res.json();
-    setTestGames(data.games ?? []);
-  };
-
-  const handleAddTestGame = async () => {
-    const { awayName, awayAbbr, homeName, homeAbbr, gameDate, gameTime, week } = testGameForm;
-    if (!awayName || !awayAbbr || !homeName || !homeAbbr || !gameDate || !gameTime) {
-      alert('Fill in all fields');
-      return;
-    }
-    const dateTimeLocal = `${gameDate}T${gameTime}:00`;
-    const utc = new Date(dateTimeLocal).toISOString();
-    await fetch('/api/admin/test-game', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-      body: JSON.stringify({
-        awayTeam: { name: awayName, abbreviation: awayAbbr.toUpperCase() },
-        homeTeam: { name: homeName, abbreviation: homeAbbr.toUpperCase() },
-        gameDate: utc,
-        week: parseInt(week),
-      }),
-    });
-    setTestGameForm({ awayName: '', awayAbbr: '', homeName: '', homeAbbr: '', gameDate: '', gameTime: '', week: '1' });
-    await loadTestGames();
-    await loadData();
-  };
-
-  const handleDeleteTestGame = async (espnEventId: string) => {
-    await fetch('/api/admin/test-game', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-      body: JSON.stringify({ espnEventId }),
-    });
-    await loadTestGames();
-    await loadData();
-  };
 
   const handleAddUser = async () => {
     if (!newUserName.trim()) {
@@ -380,12 +339,6 @@ export default function MainPage({ adminToken }: MainPageProps) {
             User Links
           </button>
           <button
-            onClick={() => { setShowTestGames(!showTestGames); if (!showTestGames) loadTestGames(); }}
-            className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
-          >
-            Test Games
-          </button>
-          <button
             onClick={handleSyncScores}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
           >
@@ -439,33 +392,6 @@ export default function MainPage({ adminToken }: MainPageProps) {
                 ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Test Games */}
-        {showTestGames && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold mb-4">Test Games</h2>
-            <div className="grid grid-cols-2 gap-2 mb-4 text-sm">
-              <input placeholder="Away team name (e.g. Chicago Bears)" value={testGameForm.awayName} onChange={e => setTestGameForm(f => ({ ...f, awayName: e.target.value }))} className="border rounded px-3 py-2" />
-              <input placeholder="Away abbr (e.g. CHI)" value={testGameForm.awayAbbr} onChange={e => setTestGameForm(f => ({ ...f, awayAbbr: e.target.value }))} className="border rounded px-3 py-2" />
-              <input placeholder="Home team name (e.g. Philadelphia Eagles)" value={testGameForm.homeName} onChange={e => setTestGameForm(f => ({ ...f, homeName: e.target.value }))} className="border rounded px-3 py-2" />
-              <input placeholder="Home abbr (e.g. PHI)" value={testGameForm.homeAbbr} onChange={e => setTestGameForm(f => ({ ...f, homeAbbr: e.target.value }))} className="border rounded px-3 py-2" />
-              <input type="date" value={testGameForm.gameDate} onChange={e => setTestGameForm(f => ({ ...f, gameDate: e.target.value }))} className="border rounded px-3 py-2" />
-              <input type="time" value={testGameForm.gameTime} onChange={e => setTestGameForm(f => ({ ...f, gameTime: e.target.value }))} className="border rounded px-3 py-2" />
-              <input placeholder="Week" type="number" min="1" max="18" value={testGameForm.week} onChange={e => setTestGameForm(f => ({ ...f, week: e.target.value }))} className="border rounded px-3 py-2" />
-              <button onClick={handleAddTestGame} className="bg-orange-500 text-white rounded px-3 py-2 hover:bg-orange-600 font-semibold">Add Game</button>
-            </div>
-            {testGames.length > 0 && (
-              <div className="space-y-2">
-                {testGames.map((g: any) => (
-                  <div key={g.espn_event_id} className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
-                    <span className="text-sm font-medium">{g.away_team_abbreviation} @ {g.home_team_abbreviation} — {new Date(g.game_date).toLocaleString()} (Week {g.week})</span>
-                    <button onClick={() => handleDeleteTestGame(g.espn_event_id)} className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">Delete</button>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
 

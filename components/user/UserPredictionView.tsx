@@ -87,15 +87,21 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
       setNotifStatus('denied');
       return;
     }
-    navigator.serviceWorker.ready.then((reg) =>
-      reg.pushManager.getSubscription().then((sub) => {
-        if (!sub) { setNotifStatus('unknown'); return; }
-        // Only show as subscribed if this device subscribed as THIS user
-        const subscribedAs = localStorage.getItem('notifSubscribedUserId');
-        setNotifStatus(subscribedAs === String(userId) ? 'subscribed' : 'unknown');
+    // Check server for authoritative subscription status
+    fetch('/api/notifications/status', {
+      headers: { Authorization: `Bearer ${authToken}` },
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.subscribed) {
+          setNotifStatus('subscribed');
+          localStorage.setItem('notifSubscribedUserId', String(userId));
+        } else {
+          setNotifStatus('unknown');
+        }
       })
-    );
-  }, [userId]);
+      .catch(() => setNotifStatus('unknown'));
+  }, [userId, authToken]);
 
   const handleToggleNotifications = async () => {
     if (notifStatus === 'subscribed') {

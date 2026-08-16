@@ -18,7 +18,7 @@ export async function GET(request: Request) {
 
     // Resolve pass info for the requesting user if auth token provided
     const authHeader = request.headers.get('authorization');
-    let thirtyMinPassInfo: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null } = { hasPass: false, designatedGameId: null, usedGameId: null };
+    let thirtyMinPassInfo: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null; activeGameId: number | null } = { hasPass: false, designatedGameId: null, usedGameId: null, activeGameId: null };
 
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
@@ -26,10 +26,12 @@ export async function GET(request: Request) {
       if (user) {
         const unused = getUnusedThirtyMinutePass(user.id, seasonYear);
         const used = getUsedThirtyMinutePass(user.id, seasonYear);
+        // Grace window stays open on the used game for 30 min after kickoff
         thirtyMinPassInfo = {
           hasPass: unused !== null,
           designatedGameId: unused?.designatedGameId ?? null,
           usedGameId: used?.usedGameId ?? null,
+          activeGameId: unused?.designatedGameId ?? used?.usedGameId ?? null,
         };
       }
     }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { bulkUpsertPredictions, BulkPredictionInput } from '@/lib/repositories/predictions';
 import { getGameById } from '@/lib/repositories/games';
 import { validateUserToken, validateAdminToken } from '@/lib/utils/tokens';
-import { getUnusedThirtyMinutePass, useThirtyMinutePass } from '@/lib/repositories/passes';
+import { getUnusedThirtyMinutePass, getUsedThirtyMinutePass, useThirtyMinutePass } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
@@ -45,16 +45,23 @@ export async function POST(request: Request) {
           if (!gameStarted) continue; // not started yet — allow
 
           const msSinceStart = now - game.gameDate.getTime();
-          const pass = getUnusedThirtyMinutePass(user.id, game.seasonYear);
 
-          if (!pass || pass.designatedGameId !== game.id || msSinceStart > THIRTY_MINUTES_MS) {
+          // Check unused (designated but not yet picked) or used (already picked, still in window)
+          const unusedPass = getUnusedThirtyMinutePass(user.id, game.seasonYear);
+          const usedPass = getUsedThirtyMinutePass(user.id, game.seasonYear);
+
+          const validUnused = unusedPass && unusedPass.designatedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
+          const validUsed = usedPass && usedPass.usedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
+
+          if (!validUnused && !validUsed) {
             return NextResponse.json(
               { error: 'This game has already started. Your 30-minute pass must be designated for this game before kickoff.' },
               { status: 403 }
             );
           }
 
-          useThirtyMinutePass(pass.id, game.id);
+          // Consume the pass on first pick (if still unused)
+          if (validUnused) useThirtyMinutePass(unusedPass!.id, game.id);
         }
       }
     }

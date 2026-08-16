@@ -6,9 +6,10 @@ import {
   designateThirtyMinutePass,
   undesignateThirtyMinutePass,
 } from '@/lib/repositories/passes';
+import { syncCurrentWeek } from '@/lib/services/game.service';
 import { CURRENT_SEASON } from '@/lib/constants';
 
-// POST: designate a game; DELETE: remove designation
+// POST: designate a game before kickoff
 export async function POST(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ success: true });
 }
 
+// DELETE: remove designation — syncs scores first to confirm game hasn't started
 export async function DELETE(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
@@ -43,7 +45,22 @@ export async function DELETE(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const pass = getUnusedThirtyMinutePass(user.id, CURRENT_SEASON);
-  if (!pass) return NextResponse.json({ error: 'No pass found' }, { status: 400 });
+  if (!pass || !pass.designatedGameId) {
+    return NextResponse.json({ error: 'No designated pass found' }, { status: 400 });
+  }
+
+  // Sync scores to get latest game status before allowing removal
+  await syncCurrentWeek(true);
+
+  const game = getGameById(pass.designatedGameId);
+  if (!game) return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+
+  if (game.gameStatus !== 'scheduled' || new Date() >= game.gameDate) {
+    return NextResponse.json(
+      { error: 'Game has already started — pass cannot be removed' },
+      { status: 400 }
+    );
+  }
 
   undesignateThirtyMinutePass(pass.id);
   return NextResponse.json({ success: true });

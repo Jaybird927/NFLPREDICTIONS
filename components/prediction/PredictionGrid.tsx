@@ -14,7 +14,7 @@ interface PredictionGridProps {
   onRequestAuth: () => void;
   authToken?: string;
   restrictToUser?: number;
-  thirtyMinPass?: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null };
+  thirtyMinPass?: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null; activeGameId: number | null };
   onPassUpdate?: () => void;
 }
 
@@ -119,7 +119,8 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               const now = Date.now();
               const msSinceStart = now - new Date(game.gameDate).getTime();
               const isDesignated = thirtyMinPass?.designatedGameId === game.id;
-              const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && isDesignated;
+              const isActivePassGame = thirtyMinPass?.activeGameId === game.id;
+              const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && isActivePassGame;
               const isEffectivelyLocked = locked && !inGraceWindow;
 
               const usedThirtyMin = thirtyMinPass?.usedGameId === game.id;

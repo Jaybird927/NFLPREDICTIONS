@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getGamesByWeek } from '@/lib/repositories/games';
 import { getPredictionsByWeek } from '@/lib/repositories/predictions';
-import { getUnusedPasses, getActiveDesignation, getUsedPasses } from '@/lib/repositories/passes';
+import { getUnusedPasses, getActiveDesignation, getUsedPasses, getUserPassSummary } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
@@ -17,32 +17,40 @@ export async function GET(request: Request) {
     const predictionsArray = Array.from(predictions.values());
 
     const authHeader = request.headers.get('authorization');
-    let thirtyMinPass: {
-      unusedCount: number;
+    let passInfo: {
+      fifteenMinUnused: number;
       designatedGameId: number | null;
       activeGameId: number | null;
-      usedGameIds: number[];
-    } = { unusedCount: 0, designatedGameId: null, activeGameId: null, usedGameIds: [] };
+      usedFifteenGameIds: number[];
+      correctionUnused: number;
+      correctionUsedGameIds: number[];
+    } = {
+      fifteenMinUnused: 0, designatedGameId: null, activeGameId: null,
+      usedFifteenGameIds: [], correctionUnused: 0, correctionUsedGameIds: [],
+    };
 
     if (authHeader?.startsWith('Bearer ')) {
       const user = getUserByToken(authHeader.substring(7));
       if (user) {
-        const unused = getUnusedPasses(user.id, seasonYear);
-        const designation = getActiveDesignation(user.id, seasonYear);
-        const used = getUsedPasses(user.id, seasonYear);
-        thirtyMinPass = {
-          unusedCount: unused.length,
-          designatedGameId: designation?.designatedGameId ?? null,
-          activeGameId: designation?.designatedGameId ?? (used.find(p => {
-            const g = games.find(g => g.id === p.usedGameId);
-            return g && Date.now() - g.gameDate.getTime() <= 30 * 60 * 1000;
-          })?.usedGameId ?? null),
-          usedGameIds: used.map(p => p.usedGameId!),
+        const summary = getUserPassSummary(user.id, seasonYear);
+        const usedFifteen = getUsedPasses(user.id, seasonYear, 'fifteen_minute');
+        // activeGameId: designated (pre-kickoff) or used-within-15min (post-kickoff)
+        const activeUsed = usedFifteen.find(p => {
+          const g = games.find(g => g.id === p.usedGameId);
+          return g && Date.now() - g.gameDate.getTime() <= 15 * 60 * 1000;
+        });
+        passInfo = {
+          fifteenMinUnused: summary.fifteenMinUnused,
+          designatedGameId: summary.fifteenMinDesignated,
+          activeGameId: summary.fifteenMinDesignated ?? activeUsed?.usedGameId ?? null,
+          usedFifteenGameIds: usedFifteen.map(p => p.usedGameId!),
+          correctionUnused: summary.correctionUnused,
+          correctionUsedGameIds: summary.correctionUsedGameIds,
         };
       }
     }
 
-    return NextResponse.json({ games, predictions: predictionsArray, thirtyMinPass });
+    return NextResponse.json({ games, predictions: predictionsArray, passInfo });
   } catch (error) {
     console.error('Failed to get games:', error);
     return NextResponse.json({ error: 'Failed to get games' }, { status: 500 });

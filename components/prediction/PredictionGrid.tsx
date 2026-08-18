@@ -14,12 +14,12 @@ interface PredictionGridProps {
   onRequestAuth: () => void;
   authToken?: string;
   restrictToUser?: number;
-  thirtyMinPass?: { unusedCount: number; designatedGameId: number | null; activeGameId: number | null; usedGameIds: number[] };
+  passInfo?: { fifteenMinUnused: number; designatedGameId: number | null; activeGameId: number | null; usedFifteenGameIds: number[]; correctionUnused: number; correctionUsedGameIds: number[] };
   selectingPass?: boolean;
   onPassUpdate?: () => void;
 }
 
-export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, thirtyMinPass, selectingPass, onPassUpdate }: PredictionGridProps) {
+export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, passInfo, selectingPass, onPassUpdate }: PredictionGridProps) {
   // Filter users if restrictToUser is set
   const displayUsers = restrictToUser ? users.filter(u => u.id === restrictToUser) : users;
   // Build a map for quick lookup: "userId-gameId" -> prediction
@@ -119,13 +119,14 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               const locked = isGameLocked(game.gameDate);
               const now = Date.now();
               const msSinceStart = now - new Date(game.gameDate).getTime();
-              const isDesignated = thirtyMinPass?.designatedGameId === game.id;
-              const isActivePassGame = thirtyMinPass?.activeGameId === game.id;
-              const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && isActivePassGame;
+              const isDesignated = passInfo?.designatedGameId === game.id;
+              const isActivePassGame = passInfo?.activeGameId === game.id;
+              const inGraceWindow = locked && msSinceStart <= 15 * 60 * 1000 && isActivePassGame;
               const isEffectivelyLocked = locked && !inGraceWindow;
 
-              const usedThirtyMin = thirtyMinPass?.usedGameIds?.includes(game.id) ?? false;
-              const isYellow = usedThirtyMin || isDesignated;
+              const usedFifteenMin = passInfo?.usedFifteenGameIds?.includes(game.id) ?? false;
+              const usedCorrection = passInfo?.correctionUsedGameIds?.includes(game.id) ?? false;
+              const isYellow = usedFifteenMin || usedCorrection || isDesignated;
               const rowBg = isYellow ? 'bg-yellow-50' : locked ? 'bg-gray-50' : '';
               const stickyBg = isYellow ? 'bg-yellow-50' : 'bg-white';
 
@@ -158,10 +159,13 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                         </button>
                       )}
                       {inGraceWindow && (
-                        <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min window open!</div>
+                        <div className="text-xs text-yellow-600 font-semibold">⏱ 15-min window open!</div>
                       )}
-                      {usedThirtyMin && (
-                        <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min pass used</div>
+                      {usedFifteenMin && !inGraceWindow && (
+                        <div className="text-xs text-yellow-600 font-semibold">⏱ 15-min pass used</div>
+                      )}
+                      {usedCorrection && (
+                        <div className="text-xs text-yellow-600 font-semibold">✏️ Correction applied</div>
                       )}
                       {game.gameStatus !== 'scheduled' && (
                         <div className="text-xs font-semibold mt-1">
@@ -192,7 +196,7 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                             onChange={(teamId) => handleCellChange(user.id, game.id, teamId, locked, inGraceWindow)}
                           />
                           {inGraceWindow && restrictToUser === user.id && (
-                            <span className="text-xs text-yellow-700 font-semibold">⏱ 30-min pass</span>
+                            <span className="text-xs text-yellow-700 font-semibold">⏱ 15-min pass</span>
                           )}
                         </div>
                       </td>

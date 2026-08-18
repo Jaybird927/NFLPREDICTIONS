@@ -112,11 +112,13 @@ CREATE TABLE IF NOT EXISTS notification_logs (
 
 CREATE INDEX IF NOT EXISTS idx_notif_log ON notification_logs(season_year, season_type, week);
 
--- Special passes (thirty_minute, earned by winning a week, valid all season)
+-- Special passes
+-- pass_type: 'correction' (auto, fixes first wrong pick) | 'fifteen_minute' (manual, 15 min after kickoff)
 CREATE TABLE IF NOT EXISTS special_passes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   season_year INTEGER NOT NULL,
+  pass_type TEXT NOT NULL DEFAULT 'fifteen_minute' CHECK(pass_type IN ('correction','fifteen_minute')),
   designated_game_id INTEGER,
   used_game_id INTEGER,
   awarded_week INTEGER,

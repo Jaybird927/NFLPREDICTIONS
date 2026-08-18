@@ -15,6 +15,7 @@ export async function POST(request: Request) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
       season_year INTEGER NOT NULL,
+      pass_type TEXT NOT NULL DEFAULT 'fifteen_minute' CHECK(pass_type IN ('correction','fifteen_minute')),
       designated_game_id INTEGER,
       used_game_id INTEGER,
       awarded_week INTEGER,
@@ -25,18 +26,18 @@ export async function POST(request: Request) {
   `);
   db.exec('CREATE INDEX IF NOT EXISTS idx_passes_user ON special_passes(user_id, season_year)');
 
-  // Seed starting passes for Jack and Grandpa
+  // Seed correction passes for Jack and Grandpa
   const starters = ['jack', 'grandpa'];
   const results: string[] = [];
   for (const name of starters) {
     const user = db.prepare('SELECT * FROM users WHERE name = ?').get(name) as any;
     if (!user) { results.push(`${name}: not found`); continue; }
-    const existing = getUnusedPasses(user.id, CURRENT_SEASON);
+    const existing = getUnusedPasses(user.id, CURRENT_SEASON, 'correction');
     if (existing.length === 0) {
-      grantPass(user.id, CURRENT_SEASON, null);
-      results.push(`${user.display_name}: granted starting pass`);
+      grantPass(user.id, CURRENT_SEASON, 'correction', null);
+      results.push(`${user.display_name}: granted correction pass`);
     } else {
-      results.push(`${user.display_name}: already has pass`);
+      results.push(`${user.display_name}: already has correction pass`);
     }
   }
 

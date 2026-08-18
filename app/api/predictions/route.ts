@@ -5,7 +5,7 @@ import { validateUserToken, validateAdminToken } from '@/lib/utils/tokens';
 import { getActiveDesignation, getUsedPasses, usePass } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 
-const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
 export async function POST(request: Request) {
   try {
@@ -46,8 +46,8 @@ export async function POST(request: Request) {
           const designation = getActiveDesignation(user.id, game.seasonYear);
           const usedPasses = getUsedPasses(user.id, game.seasonYear);
 
-          const validDesignated = designation && designation.designatedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
-          const validUsed = usedPasses.some(p => p.usedGameId === game.id) && msSinceStart <= THIRTY_MINUTES_MS;
+          const validDesignated = designation && designation.designatedGameId === game.id && msSinceStart <= FIFTEEN_MINUTES_MS;
+          const validUsed = usedPasses.some(p => p.usedGameId === game.id) && msSinceStart <= FIFTEEN_MINUTES_MS;
 
           if (!validDesignated && !validUsed) {
             return NextResponse.json(

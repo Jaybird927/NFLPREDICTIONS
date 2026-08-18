@@ -1,9 +1,12 @@
 import db from '../db';
 
-export interface ThirtyMinPass {
+export type PassType = 'correction' | 'fifteen_minute';
+
+export interface SpecialPass {
   id: number;
   userId: number;
   seasonYear: number;
+  passType: PassType;
   designatedGameId: number | null;
   usedGameId: number | null;
   awardedWeek: number | null;
@@ -13,54 +16,53 @@ interface PassRow {
   id: number;
   user_id: number;
   season_year: number;
+  pass_type: PassType;
   designated_game_id: number | null;
   used_game_id: number | null;
   awarded_week: number | null;
 }
 
-function rowToPass(row: PassRow): ThirtyMinPass {
+function rowToPass(row: PassRow): SpecialPass {
   return {
     id: row.id,
     userId: row.user_id,
     seasonYear: row.season_year,
+    passType: row.pass_type,
     designatedGameId: row.designated_game_id,
     usedGameId: row.used_game_id,
     awardedWeek: row.awarded_week,
   };
 }
 
-export function grantPass(userId: number, seasonYear: number, awardedWeek: number | null = null): void {
+export function grantPass(userId: number, seasonYear: number, passType: PassType, awardedWeek: number | null = null): void {
   db.prepare(`
-    INSERT INTO special_passes (user_id, season_year, awarded_week)
-    VALUES (?, ?, ?)
-  `).run(userId, seasonYear, awardedWeek);
+    INSERT INTO special_passes (user_id, season_year, pass_type, awarded_week)
+    VALUES (?, ?, ?, ?)
+  `).run(userId, seasonYear, passType, awardedWeek);
 }
 
-export function getUnusedPasses(userId: number, seasonYear: number): ThirtyMinPass[] {
-  const rows = db.prepare(`
-    SELECT * FROM special_passes
-    WHERE user_id = ? AND season_year = ? AND used_game_id IS NULL
-    ORDER BY awarded_at ASC
-  `).all(userId, seasonYear) as PassRow[];
+export function getUnusedPasses(userId: number, seasonYear: number, passType?: PassType): SpecialPass[] {
+  const rows = passType
+    ? db.prepare(`SELECT * FROM special_passes WHERE user_id = ? AND season_year = ? AND pass_type = ? AND used_game_id IS NULL ORDER BY awarded_at ASC`).all(userId, seasonYear, passType) as PassRow[]
+    : db.prepare(`SELECT * FROM special_passes WHERE user_id = ? AND season_year = ? AND used_game_id IS NULL ORDER BY awarded_at ASC`).all(userId, seasonYear) as PassRow[];
   return rows.map(rowToPass);
 }
 
-export function getActiveDesignation(userId: number, seasonYear: number): ThirtyMinPass | null {
+export function getUsedPasses(userId: number, seasonYear: number, passType?: PassType): SpecialPass[] {
+  const rows = passType
+    ? db.prepare(`SELECT * FROM special_passes WHERE user_id = ? AND season_year = ? AND pass_type = ? AND used_game_id IS NOT NULL ORDER BY awarded_at ASC`).all(userId, seasonYear, passType) as PassRow[]
+    : db.prepare(`SELECT * FROM special_passes WHERE user_id = ? AND season_year = ? AND used_game_id IS NOT NULL ORDER BY awarded_at ASC`).all(userId, seasonYear) as PassRow[];
+  return rows.map(rowToPass);
+}
+
+export function getActiveDesignation(userId: number, seasonYear: number): SpecialPass | null {
   const row = db.prepare(`
     SELECT * FROM special_passes
-    WHERE user_id = ? AND season_year = ? AND designated_game_id IS NOT NULL AND used_game_id IS NULL
+    WHERE user_id = ? AND season_year = ? AND pass_type = 'fifteen_minute'
+      AND designated_game_id IS NOT NULL AND used_game_id IS NULL
     LIMIT 1
   `).get(userId, seasonYear) as PassRow | undefined;
   return row ? rowToPass(row) : null;
-}
-
-export function getUsedPasses(userId: number, seasonYear: number): ThirtyMinPass[] {
-  const rows = db.prepare(`
-    SELECT * FROM special_passes
-    WHERE user_id = ? AND season_year = ? AND used_game_id IS NOT NULL
-    ORDER BY awarded_at ASC
-  `).all(userId, seasonYear) as PassRow[];
-  return rows.map(rowToPass);
 }
 
 export function designatePass(passId: number, gameId: number): void {
@@ -76,9 +78,7 @@ export function usePass(passId: number, gameId: number): void {
 }
 
 export function passAlreadyAwardedForWeek(seasonYear: number, week: number): boolean {
-  const row = db.prepare(`
-    SELECT id FROM special_passes WHERE season_year = ? AND awarded_week = ?
-  `).get(seasonYear, week);
+  const row = db.prepare(`SELECT id FROM special_passes WHERE season_year = ? AND awarded_week = ?`).get(seasonYear, week);
   return row !== undefined;
 }
 
@@ -102,9 +102,17 @@ export function getWeeklyWinners(seasonYear: number, seasonType: number, week: n
   return rows.map(r => r.user_id);
 }
 
-export function getUserPassSummary(userId: number, seasonYear: number): { unused: number; used: number; designated: boolean } {
-  const unused = getUnusedPasses(userId, seasonYear);
-  const used = getUsedPasses(userId, seasonYear);
-  const designated = unused.some(p => p.designatedGameId !== null);
-  return { unused: unused.length, used: used.length, designated };
+export function getUserPassSummary(userId: number, seasonYear: number) {
+  const unusedFifteen = getUnusedPasses(userId, seasonYear, 'fifteen_minute');
+  const usedFifteen = getUsedPasses(userId, seasonYear, 'fifteen_minute');
+  const unusedCorrection = getUnusedPasses(userId, seasonYear, 'correction');
+  const usedCorrection = getUsedPasses(userId, seasonYear, 'correction');
+  const designation = getActiveDesignation(userId, seasonYear);
+  return {
+    fifteenMinUnused: unusedFifteen.length,
+    fifteenMinUsed: usedFifteen.length,
+    fifteenMinDesignated: designation?.designatedGameId ?? null,
+    correctionUnused: unusedCorrection.length,
+    correctionUsedGameIds: usedCorrection.map(p => p.usedGameId!),
+  };
 }

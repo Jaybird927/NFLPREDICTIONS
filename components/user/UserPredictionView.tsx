@@ -68,7 +68,10 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [users, setUsers] = useState<User[]>([]);
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [thirtyMinPass, setThirtyMinPass] = useState<{ unusedCount: number; designatedGameId: number | null; activeGameId: number | null; usedGameIds: number[] }>({ unusedCount: 0, designatedGameId: null, activeGameId: null, usedGameIds: [] });
+  const [passInfo, setPassInfo] = useState<{
+    fifteenMinUnused: number; designatedGameId: number | null; activeGameId: number | null;
+    usedFifteenGameIds: number[]; correctionUnused: number; correctionUsedGameIds: number[];
+  }>({ fifteenMinUnused: 0, designatedGameId: null, activeGameId: null, usedFifteenGameIds: [], correctionUnused: 0, correctionUsedGameIds: [] });
   const [selectingPass, setSelectingPass] = useState(false);
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'week' | 'season'>('week');
@@ -182,7 +185,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
       const gamesData = await gamesRes.json();
       setGames(gamesData.games);
       setPredictions(gamesData.predictions);
-      setThirtyMinPass(gamesData.thirtyMinPass ?? { hasPass: false, usedGameId: null });
+      setPassInfo(gamesData.passInfo ?? { fifteenMinUnused: 0, designatedGameId: null, activeGameId: null, usedFifteenGameIds: [], correctionUnused: 0, correctionUsedGameIds: [] });
 
       // Only need the current user for the grid
       setUsers([{ id: userId, name: '', displayName, createdAt: new Date(), updatedAt: new Date() }]);
@@ -379,6 +382,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         {/* Rewards */}
         <RewardsBanner
           authToken={authToken}
+          passInfo={passInfo}
           selectingPass={selectingPass}
           onStartSelect={() => setSelectingPass(true)}
           onCancelSelect={() => setSelectingPass(false)}
@@ -400,7 +404,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             onRequestAuth={() => {}}
             authToken={authToken}
             restrictToUser={userId}
-            thirtyMinPass={thirtyMinPass}
+            passInfo={passInfo}
             selectingPass={selectingPass}
             onPassUpdate={() => { setSelectingPass(false); loadData(); }}
           />

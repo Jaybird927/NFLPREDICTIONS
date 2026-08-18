@@ -15,10 +15,11 @@ interface PredictionGridProps {
   authToken?: string;
   restrictToUser?: number;
   thirtyMinPass?: { unusedCount: number; designatedGameId: number | null; activeGameId: number | null; usedGameIds: number[] };
+  selectingPass?: boolean;
   onPassUpdate?: () => void;
 }
 
-export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, thirtyMinPass, onPassUpdate }: PredictionGridProps) {
+export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, thirtyMinPass, selectingPass, onPassUpdate }: PredictionGridProps) {
   // Filter users if restrictToUser is set
   const displayUsers = restrictToUser ? users.filter(u => u.id === restrictToUser) : users;
   // Build a map for quick lookup: "userId-gameId" -> prediction
@@ -128,25 +129,12 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               const rowBg = isYellow ? 'bg-yellow-50' : locked ? 'bg-gray-50' : '';
               const stickyBg = isYellow ? 'bg-yellow-50' : 'bg-white';
 
-              const canDesignate = !locked && (thirtyMinPass?.unusedCount ?? 0) > 0 && thirtyMinPass?.designatedGameId === null;
-              const canUndesignate = !locked && isDesignated;
-
               const handleDesignate = async () => {
                 if (!authToken) return;
                 await fetch('/api/passes/designate', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
                   body: JSON.stringify({ gameId: game.id }),
-                });
-                onPassUpdate?.();
-              };
-
-              const handleUndesignate = async () => {
-                if (!authToken) return;
-                await fetch('/api/passes/designate', {
-                  method: 'DELETE',
-                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-                  body: JSON.stringify({ week: game.week, seasonType: game.seasonType }),
                 });
                 onPassUpdate?.();
               };
@@ -161,20 +149,12 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                       <div className="text-xs text-gray-500">
                         {formatGameTime(game.gameDate)}
                       </div>
-                      {canDesignate && (
+                      {selectingPass && !locked && (
                         <button
                           onClick={handleDesignate}
                           className="mt-1 text-xs bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold px-2 py-0.5 rounded"
                         >
-                          ⏱ Use 30-min Pass
-                        </button>
-                      )}
-                      {canUndesignate && (
-                        <button
-                          onClick={handleUndesignate}
-                          className="mt-1 text-xs bg-yellow-200 hover:bg-yellow-300 text-yellow-800 font-semibold px-2 py-0.5 rounded"
-                        >
-                          ⏱ Pass designated — cancel?
+                          Select this game
                         </button>
                       )}
                       {inGraceWindow && (

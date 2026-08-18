@@ -69,6 +69,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [thirtyMinPass, setThirtyMinPass] = useState<{ unusedCount: number; designatedGameId: number | null; activeGameId: number | null; usedGameIds: number[] }>({ unusedCount: 0, designatedGameId: null, activeGameId: null, usedGameIds: [] });
+  const [selectingPass, setSelectingPass] = useState(false);
   const [weeklyLeaderboard, setWeeklyLeaderboard] = useState<any[]>([]);
   const [leaderboardTab, setLeaderboardTab] = useState<'week' | 'season'>('week');
   const [currentWeek, setCurrentWeek] = useState<number | null>(null);
@@ -376,7 +377,16 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         </div>
 
         {/* Rewards */}
-        <RewardsBanner authToken={authToken} />
+        <RewardsBanner
+          authToken={authToken}
+          selectingPass={selectingPass}
+          onStartSelect={() => setSelectingPass(true)}
+          onCancelSelect={() => setSelectingPass(false)}
+          onCancelDesignation={async () => {
+            await fetch('/api/passes/designate', { method: 'DELETE', headers: { Authorization: `Bearer ${authToken}` } });
+            loadData();
+          }}
+        />
 
         {/* Predictions Grid */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -391,7 +401,8 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             authToken={authToken}
             restrictToUser={userId}
             thirtyMinPass={thirtyMinPass}
-            onPassUpdate={loadData}
+            selectingPass={selectingPass}
+            onPassUpdate={() => { setSelectingPass(false); loadData(); }}
           />
         </div>
 

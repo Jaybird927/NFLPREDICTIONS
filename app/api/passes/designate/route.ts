@@ -29,8 +29,7 @@ export async function POST(request: Request) {
   const existing = getActiveDesignation(user.id, CURRENT_SEASON);
   if (existing) undesignatePass(existing.id);
 
-  const passToUse = existing ?? unused[0];
-  if (!passToUse) return NextResponse.json({ error: 'No pass available' }, { status: 400 });
+  const passToUse = existing ?? unused[0]!;
   designatePass(passToUse.id, gameId);
   return NextResponse.json({ success: true });
 }

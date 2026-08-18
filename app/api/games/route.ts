@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getGamesByWeek } from '@/lib/repositories/games';
 import { getPredictionsByWeek } from '@/lib/repositories/predictions';
-import { getUnusedThirtyMinutePass, getUsedThirtyMinutePass } from '@/lib/repositories/passes';
+import { getPassForWeek, grantWeeklyPass, isEligibleForPass } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
@@ -16,36 +16,33 @@ export async function GET(request: Request) {
     const predictions = getPredictionsByWeek(seasonYear, seasonType, week);
     const predictionsArray = Array.from(predictions.values());
 
-    // Resolve pass info for the requesting user if auth token provided
     const authHeader = request.headers.get('authorization');
-    let thirtyMinPassInfo: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null; activeGameId: number | null } = { hasPass: false, designatedGameId: null, usedGameId: null, activeGameId: null };
+    let thirtyMinPass: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null; activeGameId: number | null } = {
+      hasPass: false, designatedGameId: null, usedGameId: null, activeGameId: null,
+    };
 
     if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      const user = getUserByToken(token);
-      if (user) {
-        const unused = getUnusedThirtyMinutePass(user.id, seasonYear);
-        const used = getUsedThirtyMinutePass(user.id, seasonYear);
-        // Grace window stays open on the used game for 30 min after kickoff
-        thirtyMinPassInfo = {
-          hasPass: unused !== null,
-          designatedGameId: unused?.designatedGameId ?? null,
-          usedGameId: used?.usedGameId ?? null,
-          activeGameId: unused?.designatedGameId ?? used?.usedGameId ?? null,
-        };
+      const user = getUserByToken(authHeader.substring(7));
+      if (user && isEligibleForPass(user.name)) {
+        // Auto-grant pass for this week if not yet granted
+        grantWeeklyPass(user.id, seasonYear, seasonType, week);
+        const pass = getPassForWeek(user.id, seasonYear, seasonType, week);
+        if (pass) {
+          thirtyMinPass = {
+            hasPass: pass.usedGameId === null,
+            designatedGameId: pass.usedGameId === null ? pass.designatedGameId : null,
+            usedGameId: pass.usedGameId,
+            activeGameId: pass.usedGameId === null
+              ? pass.designatedGameId
+              : pass.usedGameId,
+          };
+        }
       }
     }
 
-    return NextResponse.json({
-      games,
-      predictions: predictionsArray,
-      thirtyMinPass: thirtyMinPassInfo,
-    });
+    return NextResponse.json({ games, predictions: predictionsArray, thirtyMinPass });
   } catch (error) {
     console.error('Failed to get games:', error);
-    return NextResponse.json(
-      { error: 'Failed to get games' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to get games' }, { status: 500 });
   }
 }

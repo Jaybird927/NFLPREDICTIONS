@@ -112,19 +112,19 @@ CREATE TABLE IF NOT EXISTS notification_logs (
 
 CREATE INDEX IF NOT EXISTS idx_notif_log ON notification_logs(season_year, season_type, week);
 
--- Special passes (thirty_minute and late)
+-- Special passes (thirty_minute, one per week for eligible users)
 CREATE TABLE IF NOT EXISTS special_passes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
-  pass_type TEXT NOT NULL CHECK(pass_type IN ('thirty_minute', 'late')),
   season_year INTEGER NOT NULL,
   season_type INTEGER NOT NULL,
-  designated_game_id INTEGER,  -- thirty_minute: game chosen before kickoff
-  used_game_id INTEGER,        -- thirty_minute: game it was actually used on
-  applied_week INTEGER,        -- late: week it was applied to
+  week INTEGER NOT NULL,
+  designated_game_id INTEGER,
+  used_game_id INTEGER,
   awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-  FOREIGN KEY (used_game_id) REFERENCES games(id)
+  FOREIGN KEY (used_game_id) REFERENCES games(id),
+  UNIQUE(user_id, season_year, season_type, week)
 );
 
 CREATE INDEX IF NOT EXISTS idx_passes_user ON special_passes(user_id, season_year, season_type);

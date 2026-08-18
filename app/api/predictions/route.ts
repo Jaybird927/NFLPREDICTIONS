@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { bulkUpsertPredictions, BulkPredictionInput } from '@/lib/repositories/predictions';
 import { getGameById } from '@/lib/repositories/games';
 import { validateUserToken, validateAdminToken } from '@/lib/utils/tokens';
-import { getUnusedThirtyMinutePass, getUsedThirtyMinutePass, useThirtyMinutePass } from '@/lib/repositories/passes';
+import { getPassForWeek, useThirtyMinutePass } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
@@ -33,35 +33,29 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Forbidden - cannot modify other users predictions' }, { status: 403 });
       }
 
-      // Check if any pick is for a started game — only allow if within designated 30-min pass window
       const user = getUserByToken(token);
       if (user) {
         for (const pred of predictions) {
-          if (pred.predictedWinnerTeamId === null) continue; // deletions are fine
+          if (pred.predictedWinnerTeamId === null) continue;
           const game = getGameById(pred.gameId);
           if (!game) continue;
           const now = Date.now();
-          const gameStarted = now > game.gameDate.getTime();
-          if (!gameStarted) continue; // not started yet — allow
+          if (now <= game.gameDate.getTime()) continue; // not started yet
 
           const msSinceStart = now - game.gameDate.getTime();
+          const pass = getPassForWeek(user.id, game.seasonYear, game.seasonType, game.week);
 
-          // Check unused (designated but not yet picked) or used (already picked, still in window)
-          const unusedPass = getUnusedThirtyMinutePass(user.id, game.seasonYear);
-          const usedPass = getUsedThirtyMinutePass(user.id, game.seasonYear);
+          const validDesignated = pass && pass.usedGameId === null && pass.designatedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
+          const validUsed = pass && pass.usedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
 
-          const validUnused = unusedPass && unusedPass.designatedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
-          const validUsed = usedPass && usedPass.usedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
-
-          if (!validUnused && !validUsed) {
+          if (!validDesignated && !validUsed) {
             return NextResponse.json(
-              { error: 'This game has already started. Your 30-minute pass must be designated for this game before kickoff.' },
+              { error: 'This game has already started. Designate your 30-minute pass before kickoff.' },
               { status: 403 }
             );
           }
 
-          // Consume the pass on first pick (if still unused)
-          if (validUnused) useThirtyMinutePass(unusedPass!.id, game.id);
+          if (validDesignated) useThirtyMinutePass(pass!.id, game.id);
         }
       }
     }

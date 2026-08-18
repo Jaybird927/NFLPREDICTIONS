@@ -146,7 +146,8 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                 if (!authToken) return;
                 await fetch('/api/passes/designate', {
                   method: 'DELETE',
-                  headers: { Authorization: `Bearer ${authToken}` },
+                  headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+                  body: JSON.stringify({ week: game.week, seasonType: game.seasonType }),
                 });
                 onPassUpdate?.();
               };

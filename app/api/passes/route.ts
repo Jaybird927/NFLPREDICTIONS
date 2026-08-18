@@ -1,26 +1,24 @@
 import { NextResponse } from 'next/server';
 import { getUserByToken } from '@/lib/repositories/users';
-import { isEligibleForPass } from '@/lib/repositories/passes';
+import { getUserPassSummary, getActiveDesignation } from '@/lib/repositories/passes';
 import { CURRENT_SEASON } from '@/lib/constants';
-import db from '@/lib/db';
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ summary: null });
   }
 
   const user = getUserByToken(authHeader.substring(7));
-  if (!user || !isEligibleForPass(user.name)) {
-    return NextResponse.json({ passes: [] });
-  }
+  if (!user) return NextResponse.json({ summary: null });
 
-  const passes = db.prepare(`
-    SELECT id, week, designated_game_id as designatedGameId, used_game_id as usedGameId
-    FROM special_passes
-    WHERE user_id = ? AND season_year = ?
-    ORDER BY week ASC
-  `).all(user.id, CURRENT_SEASON);
+  const summary = getUserPassSummary(user.id, CURRENT_SEASON);
+  const designation = getActiveDesignation(user.id, CURRENT_SEASON);
 
-  return NextResponse.json({ passes });
+  return NextResponse.json({
+    summary: {
+      ...summary,
+      designatedGameId: designation?.designatedGameId ?? null,
+    },
+  });
 }

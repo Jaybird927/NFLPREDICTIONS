@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getGamesByWeek } from '@/lib/repositories/games';
 import { getPredictionsByWeek } from '@/lib/repositories/predictions';
-import { getPassForWeek, grantWeeklyPass, isEligibleForPass } from '@/lib/repositories/passes';
+import { getUnusedPasses, getActiveDesignation, getUsedPasses } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 
@@ -17,26 +17,28 @@ export async function GET(request: Request) {
     const predictionsArray = Array.from(predictions.values());
 
     const authHeader = request.headers.get('authorization');
-    let thirtyMinPass: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null; activeGameId: number | null } = {
-      hasPass: false, designatedGameId: null, usedGameId: null, activeGameId: null,
-    };
+    let thirtyMinPass: {
+      unusedCount: number;
+      designatedGameId: number | null;
+      activeGameId: number | null;
+      usedGameIds: number[];
+    } = { unusedCount: 0, designatedGameId: null, activeGameId: null, usedGameIds: [] };
 
     if (authHeader?.startsWith('Bearer ')) {
       const user = getUserByToken(authHeader.substring(7));
-      if (user && isEligibleForPass(user.name)) {
-        // Auto-grant pass for this week if not yet granted
-        grantWeeklyPass(user.id, seasonYear, seasonType, week);
-        const pass = getPassForWeek(user.id, seasonYear, seasonType, week);
-        if (pass) {
-          thirtyMinPass = {
-            hasPass: pass.usedGameId === null,
-            designatedGameId: pass.usedGameId === null ? pass.designatedGameId : null,
-            usedGameId: pass.usedGameId,
-            activeGameId: pass.usedGameId === null
-              ? pass.designatedGameId
-              : pass.usedGameId,
-          };
-        }
+      if (user) {
+        const unused = getUnusedPasses(user.id, seasonYear);
+        const designation = getActiveDesignation(user.id, seasonYear);
+        const used = getUsedPasses(user.id, seasonYear);
+        thirtyMinPass = {
+          unusedCount: unused.length,
+          designatedGameId: designation?.designatedGameId ?? null,
+          activeGameId: designation?.designatedGameId ?? (used.find(p => {
+            const g = games.find(g => g.id === p.usedGameId);
+            return g && Date.now() - g.gameDate.getTime() <= 30 * 60 * 1000;
+          })?.usedGameId ?? null),
+          usedGameIds: used.map(p => p.usedGameId!),
+        };
       }
     }
 

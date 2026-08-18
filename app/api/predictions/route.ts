@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { bulkUpsertPredictions, BulkPredictionInput } from '@/lib/repositories/predictions';
 import { getGameById } from '@/lib/repositories/games';
 import { validateUserToken, validateAdminToken } from '@/lib/utils/tokens';
-import { getPassForWeek, useThirtyMinutePass } from '@/lib/repositories/passes';
+import { getActiveDesignation, getUsedPasses, usePass } from '@/lib/repositories/passes';
 import { getUserByToken } from '@/lib/repositories/users';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
@@ -40,22 +40,23 @@ export async function POST(request: Request) {
           const game = getGameById(pred.gameId);
           if (!game) continue;
           const now = Date.now();
-          if (now <= game.gameDate.getTime()) continue; // not started yet
+          if (now <= game.gameDate.getTime()) continue;
 
           const msSinceStart = now - game.gameDate.getTime();
-          const pass = getPassForWeek(user.id, game.seasonYear, game.seasonType, game.week);
+          const designation = getActiveDesignation(user.id, game.seasonYear);
+          const usedPasses = getUsedPasses(user.id, game.seasonYear);
 
-          const validDesignated = pass && pass.usedGameId === null && pass.designatedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
-          const validUsed = pass && pass.usedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
+          const validDesignated = designation && designation.designatedGameId === game.id && msSinceStart <= THIRTY_MINUTES_MS;
+          const validUsed = usedPasses.some(p => p.usedGameId === game.id) && msSinceStart <= THIRTY_MINUTES_MS;
 
           if (!validDesignated && !validUsed) {
             return NextResponse.json(
-              { error: 'This game has already started. Designate your 30-minute pass before kickoff.' },
+              { error: 'This game has already started. Designate a 30-minute pass before kickoff.' },
               { status: 403 }
             );
           }
 
-          if (validDesignated) useThirtyMinutePass(pass!.id, game.id);
+          if (validDesignated) usePass(designation!.id, game.id);
         }
       }
     }

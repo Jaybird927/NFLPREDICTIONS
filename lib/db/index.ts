@@ -25,6 +25,18 @@ export function initializeDatabase() {
 
   db.exec(schema);
 
+  // Recreate special_passes if it has the old schema (missing awarded_week column)
+  try {
+    const cols = db.prepare('PRAGMA table_info(special_passes)').all() as any[];
+    const hasAwardedWeek = cols.some((c: any) => c.name === 'awarded_week');
+    if (!hasAwardedWeek) {
+      db.exec('DROP TABLE IF EXISTS special_passes');
+      const tableSQL = schema.split('-- Special passes')[1]?.split('CREATE INDEX')[0]?.trim();
+      if (tableSQL) db.exec(tableSQL);
+      db.exec(`CREATE INDEX IF NOT EXISTS idx_passes_user ON special_passes(user_id, season_year)`);
+    }
+  } catch { /* table didn't exist yet */ }
+
   // Safe incremental migrations
   const migrations = [
     `ALTER TABLE predictions ADD COLUMN is_late_pass BOOLEAN DEFAULT 0`,

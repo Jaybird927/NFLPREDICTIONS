@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getUserByToken } from '@/lib/repositories/users';
 import { getGameById } from '@/lib/repositories/games';
-import { getPassForWeek, designateThirtyMinutePass, undesignateThirtyMinutePass, isEligibleForPass } from '@/lib/repositories/passes';
+import { getUnusedPasses, getActiveDesignation, designatePass, undesignatePass } from '@/lib/repositories/passes';
 import { syncCurrentWeek } from '@/lib/services/game.service';
 import { CURRENT_SEASON } from '@/lib/constants';
 
@@ -12,9 +12,7 @@ export async function POST(request: Request) {
   }
 
   const user = getUserByToken(authHeader.substring(7));
-  if (!user || !isEligibleForPass(user.name)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { gameId } = await request.json();
   const game = getGameById(gameId);
@@ -24,12 +22,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Game has already started — designate before kickoff' }, { status: 400 });
   }
 
-  const pass = getPassForWeek(user.id, CURRENT_SEASON, game.seasonType, game.week);
-  if (!pass || pass.usedGameId !== null) {
-    return NextResponse.json({ error: 'No available pass for this week' }, { status: 400 });
-  }
+  const unused = getUnusedPasses(user.id, CURRENT_SEASON);
+  if (unused.length === 0) return NextResponse.json({ error: 'No 30-minute passes available' }, { status: 400 });
 
-  designateThirtyMinutePass(pass.id, gameId);
+  // Clear any existing designation first, then designate the first unused pass
+  const existing = getActiveDesignation(user.id, CURRENT_SEASON);
+  if (existing) undesignatePass(existing.id);
+
+  const passToUse = existing ?? unused[0];
+  if (!passToUse) return NextResponse.json({ error: 'No pass available' }, { status: 400 });
+  designatePass(passToUse.id, gameId);
   return NextResponse.json({ success: true });
 }
 
@@ -40,26 +42,23 @@ export async function DELETE(request: Request) {
   }
 
   const user = getUserByToken(authHeader.substring(7));
-  if (!user || !isEligibleForPass(user.name)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { week, seasonType } = await request.json();
-  const pass = getPassForWeek(user.id, CURRENT_SEASON, seasonType, week);
-  if (!pass || !pass.designatedGameId) {
+  const designation = getActiveDesignation(user.id, CURRENT_SEASON);
+  if (!designation || !designation.designatedGameId) {
     return NextResponse.json({ error: 'No designated pass found' }, { status: 400 });
   }
 
   // Sync scores first to confirm game hasn't started
   await syncCurrentWeek(true);
 
-  const game = getGameById(pass.designatedGameId);
+  const game = getGameById(designation.designatedGameId);
   if (!game) return NextResponse.json({ error: 'Game not found' }, { status: 404 });
 
   if (game.gameStatus !== 'scheduled' || new Date() >= game.gameDate) {
     return NextResponse.json({ error: 'Game has already started — pass cannot be removed' }, { status: 400 });
   }
 
-  undesignateThirtyMinutePass(pass.id);
+  undesignatePass(designation.id);
   return NextResponse.json({ success: true });
 }

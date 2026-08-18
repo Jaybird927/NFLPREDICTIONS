@@ -14,7 +14,7 @@ interface PredictionGridProps {
   onRequestAuth: () => void;
   authToken?: string;
   restrictToUser?: number;
-  thirtyMinPass?: { hasPass: boolean; designatedGameId: number | null; usedGameId: number | null; activeGameId: number | null };
+  thirtyMinPass?: { unusedCount: number; designatedGameId: number | null; activeGameId: number | null; usedGameIds: number[] };
   onPassUpdate?: () => void;
 }
 
@@ -123,14 +123,13 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               const inGraceWindow = locked && msSinceStart <= 30 * 60 * 1000 && isActivePassGame;
               const isEffectivelyLocked = locked && !inGraceWindow;
 
-              const usedThirtyMin = thirtyMinPass?.usedGameId === game.id;
-              const hasLatePassPred = predictions.some(p => p.gameId === game.id && p.isLatePass);
+              const usedThirtyMin = thirtyMinPass?.usedGameIds?.includes(game.id) ?? false;
               const isYellow = usedThirtyMin || isDesignated;
-              const rowBg = isYellow ? 'bg-yellow-50' : hasLatePassPred ? 'bg-red-50' : locked ? 'bg-gray-50' : '';
-              const stickyBg = isYellow ? 'bg-yellow-50' : hasLatePassPred ? 'bg-red-50' : 'bg-white';
+              const rowBg = isYellow ? 'bg-yellow-50' : locked ? 'bg-gray-50' : '';
+              const stickyBg = isYellow ? 'bg-yellow-50' : 'bg-white';
 
-              const canDesignate = !locked && thirtyMinPass?.hasPass && !thirtyMinPass.usedGameId && thirtyMinPass.designatedGameId === null;
-              const canUndesignate = !locked && isDesignated && !thirtyMinPass?.usedGameId;
+              const canDesignate = !locked && (thirtyMinPass?.unusedCount ?? 0) > 0 && thirtyMinPass?.designatedGameId === null;
+              const canUndesignate = !locked && isDesignated;
 
               const handleDesignate = async () => {
                 if (!authToken) return;
@@ -184,9 +183,6 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                       {usedThirtyMin && (
                         <div className="text-xs text-yellow-600 font-semibold">⏱ 30-min pass used</div>
                       )}
-                      {hasLatePassPred && (
-                        <div className="text-xs text-red-500 font-semibold">🎲 Late pass applied</div>
-                      )}
                       {game.gameStatus !== 'scheduled' && (
                         <div className="text-xs font-semibold mt-1">
                           {game.awayTeam.abbreviation} {game.awayScore} - {game.homeScore}{' '}
@@ -217,9 +213,6 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                           />
                           {inGraceWindow && restrictToUser === user.id && (
                             <span className="text-xs text-yellow-700 font-semibold">⏱ 30-min pass</span>
-                          )}
-                          {prediction?.isLatePass && (
-                            <span className="text-xs text-red-600 font-semibold">🎲 Late pass</span>
                           )}
                         </div>
                       </td>

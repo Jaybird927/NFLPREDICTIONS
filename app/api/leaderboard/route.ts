@@ -36,9 +36,11 @@ export async function GET(request: Request) {
               END DESC
           ) as rank
         FROM users u
-        LEFT JOIN predictions p ON u.id = p.user_id
-        LEFT JOIN games g ON p.game_id = g.id
-          AND g.season_year = ? AND g.season_type = ? AND g.week = ?
+        LEFT JOIN (
+          SELECT p.* FROM predictions p
+          JOIN games g ON p.game_id = g.id
+          WHERE g.season_year = ? AND g.season_type = ? AND g.week = ?
+        ) p ON u.id = p.user_id
         GROUP BY u.id
         ORDER BY
           correct_predictions DESC,

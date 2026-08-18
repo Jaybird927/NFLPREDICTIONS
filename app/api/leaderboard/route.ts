@@ -16,22 +16,22 @@ export async function GET(request: Request) {
           u.id,
           u.display_name,
           COUNT(p.id) as total_predictions,
-          SUM(CASE WHEN p.is_correct = 1 THEN 1 ELSE 0 END) as correct_predictions,
-          SUM(CASE WHEN p.is_correct = 0 THEN 1 ELSE 0 END) as incorrect_predictions,
-          SUM(CASE WHEN p.is_correct IS NULL THEN 1 ELSE 0 END) as pending_predictions,
+          SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) as correct_predictions,
+          SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 0 THEN 1 ELSE 0 END) as incorrect_predictions,
+          SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NULL THEN 1 ELSE 0 END) as pending_predictions,
           CASE
-            WHEN SUM(CASE WHEN p.is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
-            THEN CAST(SUM(CASE WHEN p.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) /
-                 CAST(SUM(CASE WHEN p.is_correct IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100
+            WHEN SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
+            THEN CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) /
+                 CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100
             ELSE 0
           END as win_percentage,
           RANK() OVER (
             ORDER BY
-              SUM(CASE WHEN p.is_correct = 1 THEN 1 ELSE 0 END) DESC,
+              SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) DESC,
               CASE
-                WHEN SUM(CASE WHEN p.is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
-                THEN CAST(SUM(CASE WHEN p.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) /
-                     CAST(SUM(CASE WHEN p.is_correct IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100
+                WHEN SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
+                THEN CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) /
+                     CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100
                 ELSE 0
               END DESC
           ) as rank

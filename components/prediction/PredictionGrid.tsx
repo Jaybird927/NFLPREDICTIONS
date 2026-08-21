@@ -17,9 +17,10 @@ interface PredictionGridProps {
   passInfo?: { fifteenMinUnused: number; designatedGameId: number | null; activeGameId: number | null; usedFifteenGameIds: number[]; correctionUnused: number; correctionUsedGameIds: number[] };
   selectingPass?: boolean;
   onPassUpdate?: () => void;
+  currentUserId?: number;
 }
 
-export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, passInfo, selectingPass, onPassUpdate }: PredictionGridProps) {
+export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onRequestAuth, authToken, restrictToUser, passInfo, selectingPass, onPassUpdate, currentUserId }: PredictionGridProps) {
   // Filter users if restrictToUser is set
   const displayUsers = restrictToUser ? users.filter(u => u.id === restrictToUser) : users;
   // Build a map for quick lookup: "userId-gameId" -> prediction
@@ -109,7 +110,7 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                   key={user.id}
                   className="border border-gray-300 px-2 py-2 text-center font-semibold text-sm"
                 >
-                  {user.displayName}
+                  {currentUserId && user.id === currentUserId ? <strong>You</strong> : user.displayName}
                 </th>
               ))}
             </tr>

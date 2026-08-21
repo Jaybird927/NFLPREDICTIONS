@@ -187,8 +187,15 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
       setPredictions(gamesData.predictions);
       setPassInfo(gamesData.passInfo ?? { fifteenMinUnused: 0, designatedGameId: null, activeGameId: null, usedFifteenGameIds: [], correctionUnused: 0, correctionUsedGameIds: [] });
 
-      // Only need the current user for the grid
-      setUsers([{ id: userId, name: '', displayName, createdAt: new Date(), updatedAt: new Date() }]);
+      // Show all users once the week is fully final, otherwise just the current user
+      const allFinal = gamesData.games.length > 0 && gamesData.games.every((g: any) => g.gameStatus === 'final');
+      if (allFinal) {
+        const usersRes = await fetch('/api/users', { cache: 'no-store' });
+        const usersData = await usersRes.json();
+        setUsers(usersData.map((u: any) => ({ id: u.id, name: u.name, displayName: u.displayName, createdAt: new Date(), updatedAt: new Date() })));
+      } else {
+        setUsers([{ id: userId, name: '', displayName, createdAt: new Date(), updatedAt: new Date() }]);
+      }
 
       // Load season leaderboard
       const leaderboardRes = await fetch(
@@ -403,7 +410,8 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             isAdmin={false}
             onRequestAuth={() => {}}
             authToken={authToken}
-            restrictToUser={userId}
+            restrictToUser={users.length === 1 ? userId : undefined}
+            currentUserId={userId}
             passInfo={passInfo}
             selectingPass={selectingPass}
             onPassUpdate={() => { setSelectingPass(false); loadData(); }}

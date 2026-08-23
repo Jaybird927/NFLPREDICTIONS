@@ -67,7 +67,6 @@ export function TipsModal({ onClose }: TipsModalProps) {
                 <li>Make your picks early in the week for all games</li>
                 <li>You can come back and update picks before games start</li>
                 <li>Your row in the leaderboard is highlighted in blue</li>
-                <li>Bookmark this page to easily access your picks</li>
               </ul>
             </section>
 

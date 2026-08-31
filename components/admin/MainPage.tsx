@@ -5,6 +5,7 @@ import { Game, User, Prediction } from '@/types';
 import { PredictionGrid } from '@/components/prediction/PredictionGrid';
 import { LeaderboardTable } from '@/components/leaderboard/LeaderboardTable';
 import { PasswordPrompt } from '@/components/admin/PasswordPrompt';
+import { CertificatesModal } from '@/components/admin/CertificatesModal';
 import { CURRENT_SEASON, CURRENT_SEASON_TYPE } from '@/lib/constants';
 import { isAdminAuthenticated, logoutAdmin } from '@/lib/utils/adminAuth';
 
@@ -26,6 +27,7 @@ export default function MainPage({ adminToken }: MainPageProps) {
   const [newUserName, setNewUserName] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [showCertificates, setShowCertificates] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
 
   // Load current week on mount
@@ -344,6 +346,12 @@ export default function MainPage({ adminToken }: MainPageProps) {
           >
             Sync Scores Now
           </button>
+          <button
+            onClick={() => setShowCertificates(true)}
+            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+          >
+            Certificates
+          </button>
           {isAdmin && (
             <button
               onClick={handleLogout}
@@ -444,6 +452,11 @@ export default function MainPage({ adminToken }: MainPageProps) {
           onCorrectPassword={handlePasswordSuccess}
           onCancel={() => setShowPasswordPrompt(false)}
         />
+      )}
+
+      {/* Certificates Modal */}
+      {showCertificates && (
+        <CertificatesModal onClose={() => setShowCertificates(false)} />
       )}
     </main>
   );

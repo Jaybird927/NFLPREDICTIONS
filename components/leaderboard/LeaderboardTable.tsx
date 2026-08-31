@@ -25,21 +25,15 @@ export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableP
     );
   }
 
-  // Find highlighted user's entry and position info
   const userEntry = entries.find(e => e.id === highlightUserId);
   let feedbackMessage = '';
 
   if (userEntry && highlightUserId) {
     const userRank = userEntry.rank;
     const lastRank = entries[entries.length - 1]?.rank || 1;
-
-    // Check if tied for first
     const tiedForFirst = entries.filter(e => e.rank === 1).length > 1 && userRank === 1;
-    // Check if tied for last
     const tiedForLast = entries.filter(e => e.rank === lastRank).length > 1 && userRank === lastRank;
-    // Check if alone in first
     const isFirst = userRank === 1 && !tiedForFirst;
-    // Check if alone in last
     const isLast = userRank === lastRank && !tiedForLast && entries.length > 1;
 
     if (isFirst) {
@@ -86,9 +80,6 @@ export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableP
             <th className="border border-gray-300 px-4 py-2 text-center font-semibold text-sm">
               Win %
             </th>
-            <th className="border border-gray-300 px-4 py-2 text-center font-semibold text-sm">
-              Total
-            </th>
           </tr>
         </thead>
         <tbody>
@@ -120,9 +111,6 @@ export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableP
                   {displayWinPercentage}
                   {displayWinPercentage !== '-' && '%'}
                 </td>
-                <td className="border border-gray-300 px-4 py-2 text-center text-sm text-gray-600">
-                  {entry.total_predictions}
-                </td>
               </tr>
             );
           })}
@@ -130,7 +118,6 @@ export function LeaderboardTable({ entries, highlightUserId }: LeaderboardTableP
       </table>
       </div>
 
-      {/* Feedback Message */}
       {feedbackMessage && (
         <div className="text-center p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
           <p className="text-lg font-semibold text-blue-900">{feedbackMessage}</p>

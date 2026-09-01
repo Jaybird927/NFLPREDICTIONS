@@ -51,7 +51,8 @@ export async function GET(request: Request) {
       return NextResponse.json(db.prepare(sql).all());
     }
 
-    const sql = leaderboardQuery(`g.season_year = ${seasonYear} AND g.season_type = ${seasonType}`);
+    // Season totals span the whole year (regular season + playoffs), not just the active tab's type
+    const sql = leaderboardQuery(`g.season_year = ${seasonYear}`);
     return NextResponse.json(db.prepare(sql).all());
   } catch (error) {
     console.error('Failed to get leaderboard:', error);

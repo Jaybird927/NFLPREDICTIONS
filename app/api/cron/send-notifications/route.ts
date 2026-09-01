@@ -134,8 +134,14 @@ export async function GET(request: Request) {
       // Already sent this notification type for this week
       if (wasNotificationSent(sub.userId, seasonYear, seasonType, week, threshold.type)) continue;
 
+      const playoffWeekLabels: Record<number, string> = {
+        1: 'Wild Card',
+        2: 'Divisional',
+        3: 'Conference',
+        5: 'Super Bowl',
+      };
       const weekLabel = seasonType === 3
-        ? ['Wild Card', 'Divisional', 'Conference', 'Pro Bowl', 'Super Bowl'][week - 1] ?? `Playoff Week ${week}`
+        ? playoffWeekLabels[week] ?? `Playoff Week ${week}`
         : `Week ${week}`;
 
       const user = getUserById(sub.userId);

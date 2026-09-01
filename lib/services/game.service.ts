@@ -100,8 +100,11 @@ export async function syncEntireSeason(seasonYear: number, seasonType: number): 
     errors: [],
   };
 
-  // Regular season has 18 weeks, playoffs have 5 weeks (Wild Card, Divisional, Conference, Pro Bowl, Super Bowl)
+  // Regular season has 18 weeks, playoffs have 5 (Wild Card, Divisional, Conference, Pro Bowl bye, Super Bowl)
   const maxWeeks = seasonType === 2 ? 18 : seasonType === 3 ? 5 : 4;
+  // Week 4 of the playoffs is the Pro Bowl bye week — ESPN has no games for it, so
+  // an empty result there shouldn't stop the sync before it reaches the Super Bowl.
+  const proBowlWeek = 4;
 
   for (let week = 1; week <= maxWeeks; week++) {
     console.log(`Syncing week ${week}...`);
@@ -113,7 +116,7 @@ export async function syncEntireSeason(seasonYear: number, seasonType: number): 
     totalResult.errors.push(...result.errors);
 
     // If no games found, we've reached the end of the schedule
-    if (result.gamesProcessed === 0) {
+    if (result.gamesProcessed === 0 && !(seasonType === 3 && week === proBowlWeek)) {
       console.log(`No games found for week ${week}, stopping sync`);
       break;
     }

@@ -289,10 +289,19 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
       case 1: return 'Wild Card';
       case 2: return 'Divisional';
       case 3: return 'Conference';
-      case 4: return 'Pro Bowl';
       case 5: return 'Super Bowl';
       default: return `Playoff Week ${week}`;
     }
+  };
+
+  // Week 4 is the Pro Bowl bye week (no games) — skip over it in playoffs
+  const getNextWeek = (week: number) => {
+    const next = week + 1;
+    return currentSeasonType === 3 && next === 4 ? next + 1 : next;
+  };
+  const getPrevWeek = (week: number) => {
+    const prev = week - 1;
+    return currentSeasonType === 3 && prev === 4 ? prev - 1 : prev;
   };
 
   if (isLoading || currentWeek === null) {
@@ -336,7 +345,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
         {/* Week Selector */}
         <div className="flex justify-center gap-4">
           <button
-            onClick={() => setCurrentWeek(Math.max(1, currentWeek - 1))}
+            onClick={() => setCurrentWeek(Math.max(1, getPrevWeek(currentWeek)))}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             disabled={currentWeek === 1}
           >
@@ -346,7 +355,7 @@ export default function UserPredictionView({ userId, displayName, authToken }: U
             {getWeekLabel(currentWeek)}
           </div>
           <button
-            onClick={() => setCurrentWeek(Math.min(getMaxWeek(), currentWeek + 1))}
+            onClick={() => setCurrentWeek(Math.min(getMaxWeek(), getNextWeek(currentWeek)))}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
             disabled={currentWeek === getMaxWeek()}
           >

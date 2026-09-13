@@ -33,7 +33,7 @@ export function SplashScreen() {
       }}
     >
       <img
-        src="/splash-logo.jpg"
+        src="/splash-logo.png"
         alt="NFL Predictions"
         className="w-64 max-w-[70vw] h-auto"
         style={{

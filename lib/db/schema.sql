@@ -129,6 +129,18 @@ CREATE TABLE IF NOT EXISTS special_passes (
 
 CREATE INDEX IF NOT EXISTS idx_passes_user ON special_passes(user_id, season_year);
 
+-- Tracks which users have already received the end-of-week recap push notification
+CREATE TABLE IF NOT EXISTS week_recap_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  season_year INTEGER NOT NULL,
+  season_type INTEGER NOT NULL,
+  week INTEGER NOT NULL,
+  sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(user_id, season_year, season_type, week)
+);
+
 -- Cached "why did they win" recap text pulled from ESPN's game summary
 CREATE TABLE IF NOT EXISTS game_recaps (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

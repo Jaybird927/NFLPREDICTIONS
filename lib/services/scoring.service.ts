@@ -2,6 +2,7 @@ import db from '../db';
 import { getGameById, getGamesByWeek } from '../repositories/games';
 import { recalculateLeaderboard } from '../repositories/leaderboard';
 import { getWeeklyWinners, grantPass, passAlreadyAwardedForWeek, getUnusedPasses, usePass } from '../repositories/passes';
+import { sendWeeklyRecapNotifications } from './weekRecap.service';
 
 export async function updatePredictionsForGame(gameId: number): Promise<void> {
   const game = getGameById(gameId);
@@ -60,6 +61,9 @@ export async function updatePredictionsForGame(gameId: number): Promise<void> {
       usePass(corrections[0]!.id, firstWrong.game_id);
       console.log(`Applied correction pass for user ${userId} on game ${firstWrong.game_id}`);
     }
+
+    // Send end-of-week recap notifications (standings movement + "why" teaser)
+    await sendWeeklyRecapNotifications(game.seasonYear, game.seasonType, game.week, winners);
   }
 
   await recalculateLeaderboard(game.seasonYear, game.seasonType);

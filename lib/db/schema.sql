@@ -128,3 +128,14 @@ CREATE TABLE IF NOT EXISTS special_passes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_passes_user ON special_passes(user_id, season_year);
+
+-- Cached "why did they win" recap text pulled from ESPN's game summary
+CREATE TABLE IF NOT EXISTS game_recaps (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  game_id INTEGER NOT NULL UNIQUE,
+  headline TEXT,
+  description TEXT,
+  source TEXT,
+  fetched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+);

@@ -92,6 +92,37 @@ export class ESPNClient {
   async getWeekSchedule(seasonType: number, week: number): Promise<ESPNScoreboardResponse> {
     return this.getScoreboard(seasonType, week);
   }
+
+  async getRecap(espnEventId: string): Promise<{ headline: string; description: string; source: string } | null> {
+    const url = `${this.baseUrl}/summary?event=${espnEventId}`;
+
+    try {
+      const response = await fetch(url, {
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(10000),
+      });
+
+      if (!response.ok) {
+        throw new Error(`ESPN API error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      const article = data.article;
+
+      if (!article?.description) {
+        return null;
+      }
+
+      return {
+        headline: article.headline || '',
+        description: article.description,
+        source: article.source || 'ESPN',
+      };
+    } catch (error) {
+      console.error('ESPN recap fetch failed:', error);
+      return null;
+    }
+  }
 }
 
 export const espnClient = new ESPNClient();

@@ -33,6 +33,39 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
   const [selections, setSelections] = useState<Map<string, string | null>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
 
+  // State for expanded "why did they win" recaps, keyed by game id
+  const [recaps, setRecaps] = useState<Map<number, { loading: boolean; text: string | null; source?: string }>>(new Map());
+
+  const toggleRecap = async (gameId: number) => {
+    const existing = recaps.get(gameId);
+    if (existing) {
+      // Already open or loading - collapse it
+      setRecaps((prev) => {
+        const next = new Map(prev);
+        next.delete(gameId);
+        return next;
+      });
+      return;
+    }
+
+    setRecaps((prev) => new Map(prev).set(gameId, { loading: true, text: null }));
+
+    try {
+      const res = await fetch(`/api/games/${gameId}/recap`);
+      const data = await res.json();
+      setRecaps((prev) =>
+        new Map(prev).set(gameId, {
+          loading: false,
+          text: data.recap?.description || 'No recap available for this game yet.',
+          source: data.recap?.source,
+        })
+      );
+    } catch (error) {
+      console.error('Failed to load recap:', error);
+      setRecaps((prev) => new Map(prev).set(gameId, { loading: false, text: 'Failed to load recap.' }));
+    }
+  };
+
   // Sync selections with predictions when they change
   useEffect(() => {
     const map = new Map<string, string | null>();
@@ -176,6 +209,30 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                             <span className="ml-1 text-gray-600">(F)</span>
                           )}
                         </div>
+                      )}
+                      {game.gameStatus === 'final' && (
+                        <>
+                          <button
+                            onClick={() => toggleRecap(game.id)}
+                            className="mt-1 text-xs text-blue-600 hover:underline text-left w-fit"
+                          >
+                            {recaps.has(game.id) ? 'Hide why ▲' : 'Why? ▼'}
+                          </button>
+                          {recaps.has(game.id) && (
+                            <div className="mt-1 text-xs text-gray-600 max-w-xs whitespace-normal">
+                              {recaps.get(game.id)!.loading ? (
+                                'Loading...'
+                              ) : (
+                                <>
+                                  {recaps.get(game.id)!.text}
+                                  {recaps.get(game.id)!.source && (
+                                    <span className="text-gray-400"> — {recaps.get(game.id)!.source}</span>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
                   </td>

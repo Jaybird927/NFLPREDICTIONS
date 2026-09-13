@@ -4,9 +4,10 @@ import { getRecapByGameId, upsertRecap } from '@/lib/repositories/recaps';
 import { espnClient } from '@/lib/espn/client';
 import { GAME_STATUS } from '@/lib/constants';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const gameId = parseInt(params.id);
+    const { id } = await params;
+    const gameId = parseInt(id);
     const game = getGameById(gameId);
 
     if (!game) {

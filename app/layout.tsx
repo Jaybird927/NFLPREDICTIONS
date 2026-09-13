@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { SplashScreen } from "@/components/layout/SplashScreen";
 
 export const metadata: Metadata = {
   title: "NFL Predictions",
@@ -20,6 +21,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="antialiased">
+        <SplashScreen />
         {children}
         <script
           dangerouslySetInnerHTML={{

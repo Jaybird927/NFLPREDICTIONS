@@ -42,7 +42,7 @@ export async function sendWeeklyRecapNotifications(
       body = `Congrats! You finished in ${ordinal(current.rank)} place!${championLine} Can't wait to see you next year!`;
     } else {
       title = `${weekLabel} Recap`;
-      const passLine = weeklyWinnerUserIds.includes(user.id) ? ` You had the most correct picks this week and earned a 15-minute pass! 🎉` : '';
+      const passLine = weeklyWinnerUserIds.includes(user.id) ? ` You're in 1st place in the weekly standings and earned a 15-minute pass! 🎉` : '';
       const recapLine = ' See why your teams won or lost according to excerpts from ESPN.';
 
       const prev = prevStandings?.find((s) => s.userId === user.id);

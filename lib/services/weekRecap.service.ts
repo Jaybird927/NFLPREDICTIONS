@@ -1,5 +1,5 @@
 import db from '../db';
-import { getCumulativeStandings, getWeekSequence } from '../repositories/leaderboard';
+import { getCumulativeStandings, getWeekOnlyStandings, getWeekSequence } from '../repositories/leaderboard';
 import { wasRecapSent, logRecapSent } from '../repositories/weekRecapLogs';
 import { sendPushToUser } from './push.service';
 import { getWeekLabel, isSeasonFinale, ordinal } from '../utils/season';
@@ -20,6 +20,7 @@ export async function sendWeeklyRecapNotifications(
 
   const currentStandings = getCumulativeStandings(seasonYear, seasonType, week);
   const prevStandings = prevEntry ? getCumulativeStandings(seasonYear, prevEntry.seasonType, prevEntry.week) : null;
+  const weeklyStandings = getWeekOnlyStandings(seasonYear, seasonType, week);
 
   const users = db.prepare('SELECT id, auth_token FROM users').all() as Array<{ id: number; auth_token: string | null }>;
 
@@ -42,17 +43,24 @@ export async function sendWeeklyRecapNotifications(
       body = `Congrats! You finished in ${ordinal(current.rank)} place!${championLine} Can't wait to see you next year!`;
     } else {
       title = `${weekLabel} Recap`;
-      const passLine = weeklyWinnerUserIds.includes(user.id) ? ` You're in 1st place in the weekly standings and earned a 15-minute pass! 🎉` : '';
+
+      const weeklyRank = weeklyStandings.find((s) => s.userId === user.id)?.rank;
+      const wonPass = weeklyWinnerUserIds.includes(user.id);
+      const weeklyLine = weeklyRank
+        ? ` You're in ${ordinal(weeklyRank)} place in the weekly standings${wonPass ? ' and earned a 15-minute pass! 🎉' : ''}.`
+        : '';
       const recapLine = ' See why your teams won or lost according to excerpts from ESPN.';
 
       const prev = prevStandings?.find((s) => s.userId === user.id);
+      let placeLine: string;
       if (!prev) {
-        body = `You're in ${ordinal(current.rank)} place!${passLine}${recapLine}`;
+        placeLine = `You're in ${ordinal(current.rank)} place!`;
       } else if (prev.rank === current.rank) {
-        body = `You stayed at ${ordinal(current.rank)} place!${passLine}${recapLine}`;
+        placeLine = `You stayed at ${ordinal(current.rank)} place!`;
       } else {
-        body = `You went from ${ordinal(prev.rank)} to ${ordinal(current.rank)} place!${passLine}${recapLine}`;
+        placeLine = `You went from ${ordinal(prev.rank)} to ${ordinal(current.rank)} place!`;
       }
+      body = `${placeLine}${weeklyLine}${recapLine}`;
     }
 
     try {

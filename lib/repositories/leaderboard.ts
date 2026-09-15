@@ -59,6 +59,50 @@ export function getCumulativeStandings(
   }));
 }
 
+// Standings for a single week only (not cumulative) — how everyone did in just
+// that week's picks.
+export function getWeekOnlyStandings(
+  seasonYear: number,
+  seasonType: number,
+  week: number
+): CumulativeStanding[] {
+  const rows = db.prepare(`
+    SELECT
+      u.id as user_id,
+      SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) as correct_predictions,
+      CASE
+        WHEN SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
+        THEN CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) /
+             CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100
+        ELSE 0
+      END as win_percentage,
+      RANK() OVER (
+        ORDER BY
+          SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) DESC,
+          CASE
+            WHEN SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) > 0
+            THEN CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct = 1 THEN 1 ELSE 0 END) AS REAL) /
+                 CAST(SUM(CASE WHEN p.id IS NOT NULL AND p.is_correct IS NOT NULL THEN 1 ELSE 0 END) AS REAL) * 100
+            ELSE 0
+          END DESC
+      ) as rank
+    FROM users u
+    LEFT JOIN (
+      SELECT p.* FROM predictions p
+      JOIN games g ON p.game_id = g.id
+      WHERE g.season_year = ? AND g.season_type = ? AND g.week = ?
+    ) p ON u.id = p.user_id
+    GROUP BY u.id
+  `).all(seasonYear, seasonType, week) as CumulativeStandingRow[];
+
+  return rows.map((r) => ({
+    userId: r.user_id,
+    rank: r.rank,
+    correctPredictions: r.correct_predictions,
+    winPercentage: r.win_percentage,
+  }));
+}
+
 // Chronological list of (seasonType, week) pairs that have games, used to find
 // "the week before this one" even across the regular season / playoffs boundary.
 export function getWeekSequence(seasonYear: number): Array<{ seasonType: number; week: number }> {

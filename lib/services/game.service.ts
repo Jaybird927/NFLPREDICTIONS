@@ -88,8 +88,24 @@ export async function syncGamesFromESPN(
 }
 
 export async function syncCurrentWeek(noCache: boolean = false): Promise<SyncResult> {
-  const currentWeek = await espnClient.getCurrentWeek(noCache);
-  return syncGamesFromESPN(currentWeek.seasonType, currentWeek.week, currentWeek.year, noCache);
+  const weeksToSync = await espnClient.getSyncWeeks(noCache);
+
+  const combined: SyncResult = {
+    gamesProcessed: 0,
+    gamesUpdated: 0,
+    gamesCreated: 0,
+    errors: [],
+  };
+
+  for (const { seasonType, week, year } of weeksToSync) {
+    const result = await syncGamesFromESPN(seasonType, week, year, noCache);
+    combined.gamesProcessed += result.gamesProcessed;
+    combined.gamesUpdated += result.gamesUpdated;
+    combined.gamesCreated += result.gamesCreated;
+    combined.errors.push(...result.errors);
+  }
+
+  return combined;
 }
 
 export async function syncEntireSeason(seasonYear: number, seasonType: number): Promise<SyncResult> {

@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   game_id INTEGER NOT NULL,
-  predicted_winner_team_id TEXT NOT NULL,
+  predicted_winner_team_id TEXT, -- NULL means the user never picked; scored as an automatic loss
   is_correct BOOLEAN DEFAULT NULL,
   is_late_pass BOOLEAN DEFAULT 0,
 

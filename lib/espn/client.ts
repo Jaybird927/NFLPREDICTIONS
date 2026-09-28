@@ -116,7 +116,7 @@ export class ESPNClient {
     return this.getScoreboard(seasonType, week);
   }
 
-  async getRecap(espnEventId: string): Promise<{ headline: string; description: string; source: string } | null> {
+  async getRecap(espnEventId: string): Promise<{ headline: string; description: string; source: string; isFallback?: boolean } | null> {
     const url = `${this.baseUrl}/summary?event=${espnEventId}`;
 
     try {
@@ -132,20 +132,65 @@ export class ESPNClient {
       const data = await response.json();
       const article = data.article;
 
-      if (!article?.description) {
-        return null;
+      if (article?.description) {
+        return {
+          headline: article.headline || '',
+          description: article.description,
+          source: article.source || 'ESPN',
+        };
       }
 
-      return {
-        headline: article.headline || '',
-        description: article.description,
-        source: article.source || 'ESPN',
-      };
+      // ESPN hasn't published a written recap for this game yet — fall back
+      // to a quick summary built from the same response's box score leaders
+      // instead of leaving the user with nothing.
+      return buildFallbackRecap(data);
     } catch (error) {
       console.error('ESPN recap fetch failed:', error);
       return null;
     }
   }
+}
+
+interface ESPNStatLeader {
+  displayValue: string;
+  athlete?: { shortName?: string };
+}
+
+interface ESPNTeamLeaders {
+  team?: { abbreviation?: string };
+  leaders?: Array<{ name: string; leaders?: ESPNStatLeader[] }>;
+}
+
+// Builds a short "who did what" blurb from box score stat leaders when ESPN
+// hasn't written a full recap article for the game yet. Returns null if the
+// summary response doesn't have enough to say anything useful.
+function buildFallbackRecap(data: { leaders?: ESPNTeamLeaders[] }): { headline: string; description: string; source: string; isFallback: true } | null {
+  const teams = data.leaders;
+  if (!Array.isArray(teams) || teams.length === 0) return null;
+
+  const parts: string[] = [];
+  for (const team of teams) {
+    const abbr = team.team?.abbreviation;
+    if (!abbr) continue;
+
+    const passing = team.leaders?.find((c) => c.name === 'passingYards')?.leaders?.[0];
+    const rushing = team.leaders?.find((c) => c.name === 'rushingYards')?.leaders?.[0];
+
+    const bits: string[] = [];
+    if (passing?.athlete?.shortName) bits.push(`${passing.athlete.shortName} ${passing.displayValue}`);
+    if (rushing?.athlete?.shortName) bits.push(`${rushing.athlete.shortName} ${rushing.displayValue}`);
+
+    if (bits.length > 0) parts.push(`${abbr}: ${bits.join('; ')}`);
+  }
+
+  if (parts.length === 0) return null;
+
+  return {
+    headline: '',
+    description: parts.join('. ') + '.',
+    source: 'ESPN Box Score',
+    isFallback: true,
+  };
 }
 
 export const espnClient = new ESPNClient();

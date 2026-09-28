@@ -28,7 +28,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ recap: null });
     }
 
-    upsertRecap(gameId, recap);
+    // Don't cache the box-score fallback — keep checking for ESPN's real
+    // written recap so it can take over once they publish it.
+    if (!recap.isFallback) {
+      upsertRecap(gameId, recap);
+    }
     return NextResponse.json({ recap });
   } catch (error) {
     console.error('Failed to get game recap:', error);

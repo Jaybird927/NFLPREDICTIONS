@@ -30,24 +30,37 @@ function getFirstGameOfCurrentWeek(
   seasonType: number,
   week: number
 ): { gameDate: Date; week: number } | null {
-  const row = db.prepare(`
-    SELECT MIN(game_date) as first_game, week
+  // Find the next game in this week that hasn't kicked off yet, by actual
+  // kickoff time rather than game_status — game_status only updates when
+  // someone presses "Sync Scores Now", so relying on it here meant a game
+  // that kicked off while nobody had synced recently would stay 'scheduled'
+  // forever, permanently anchoring "current week" to a week that already
+  // started and blocking every reminder for the real current week.
+  const rows = db.prepare(`
+    SELECT game_date, week
     FROM games
-    WHERE season_year = ? AND season_type = ? AND week = ? AND game_status = 'scheduled'
-    GROUP BY week
-  `).get(seasonYear, seasonType, week) as { first_game: string; week: number } | undefined;
+    WHERE season_year = ? AND season_type = ? AND week = ?
+    ORDER BY game_date ASC
+  `).all(seasonYear, seasonType, week) as { game_date: string; week: number }[];
 
-  if (!row?.first_game) return null;
-  return { gameDate: new Date(row.first_game), week: row.week };
+  const now = Date.now();
+  const upcoming = rows.find((r) => new Date(r.game_date).getTime() > now);
+  if (!upcoming) return null;
+  return { gameDate: new Date(upcoming.game_date), week: upcoming.week };
 }
 
 function getCurrentWeekNumber(seasonYear: number, seasonType: number): number | null {
-  const row = db.prepare(`
-    SELECT week FROM games
-    WHERE season_year = ? AND season_type = ? AND game_status = 'scheduled'
-    ORDER BY game_date ASC LIMIT 1
-  `).get(seasonYear, seasonType) as { week: number } | undefined;
-  return row?.week ?? null;
+  // Same reasoning as getFirstGameOfCurrentWeek: pick the week of the next
+  // game by actual kickoff time, not by the manually-synced game_status.
+  const rows = db.prepare(`
+    SELECT week, game_date FROM games
+    WHERE season_year = ? AND season_type = ?
+    ORDER BY game_date ASC
+  `).all(seasonYear, seasonType) as { week: number; game_date: string }[];
+
+  const now = Date.now();
+  const upcoming = rows.find((r) => new Date(r.game_date).getTime() > now);
+  return upcoming?.week ?? null;
 }
 
 export async function GET(request: Request) {

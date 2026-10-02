@@ -55,6 +55,8 @@ export function getUsedPasses(userId: number, seasonYear: number, passType?: Pas
   return rows.map(rowToPass);
 }
 
+const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
+
 export function getActiveDesignation(userId: number, seasonYear: number): SpecialPass | null {
   const row = db.prepare(`
     SELECT * FROM special_passes
@@ -62,7 +64,21 @@ export function getActiveDesignation(userId: number, seasonYear: number): Specia
       AND designated_game_id IS NOT NULL AND used_game_id IS NULL
     LIMIT 1
   `).get(userId, seasonYear) as PassRow | undefined;
-  return row ? rowToPass(row) : null;
+
+  if (!row) return null;
+
+  // If the designated game's 15-minute pick window has fully elapsed without
+  // the pass actually being used, it's wasted — release it instead of
+  // leaving it "designated" to a bygone game forever (which permanently
+  // blocked re-designating via the UI's Cancel button, since that requires
+  // the game to still be scheduled/in the future).
+  const game = db.prepare('SELECT game_date FROM games WHERE id = ?').get(row.designated_game_id) as { game_date: string } | undefined;
+  if (game && Date.now() > new Date(game.game_date).getTime() + FIFTEEN_MINUTES_MS) {
+    db.prepare('UPDATE special_passes SET designated_game_id = NULL WHERE id = ?').run(row.id);
+    return null;
+  }
+
+  return rowToPass(row);
 }
 
 export function designatePass(passId: number, gameId: number): void {

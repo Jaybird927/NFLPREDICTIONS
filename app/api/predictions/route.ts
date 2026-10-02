@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
           if (!validDesignated && !validUsed) {
             return NextResponse.json(
-              { error: 'This game has already started. Designate a 30-minute pass before kickoff.' },
+              { error: 'This game has already started. Designate a 15-minute pass before kickoff.' },
               { status: 403 }
             );
           }

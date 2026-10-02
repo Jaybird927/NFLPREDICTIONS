@@ -22,8 +22,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Game has already started — designate before kickoff' }, { status: 400 });
   }
 
-  const unused = getUnusedPasses(user.id, CURRENT_SEASON);
-  if (unused.length === 0) return NextResponse.json({ error: 'No 30-minute passes available' }, { status: 400 });
+  const unused = getUnusedPasses(user.id, CURRENT_SEASON, 'fifteen_minute');
+  if (unused.length === 0) return NextResponse.json({ error: 'No 15-minute passes available' }, { status: 400 });
 
   // Clear any existing designation first, then designate the first unused pass
   const existing = getActiveDesignation(user.id, CURRENT_SEASON);

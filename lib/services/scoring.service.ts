@@ -6,26 +6,34 @@ import { sendWeeklyRecapNotifications } from './weekRecap.service';
 
 export async function updatePredictionsForGame(gameId: number): Promise<void> {
   const game = getGameById(gameId);
-  if (!game || !game.winnerTeamId) return;
+  if (!game || game.gameStatus !== 'final') return;
 
-  // Create missing predictions as losses
-  db.prepare(`
-    INSERT INTO predictions (user_id, game_id, predicted_winner_team_id, is_correct, created_at, updated_at)
-    SELECT u.id, ?, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-    FROM users u
-    WHERE NOT EXISTS (SELECT 1 FROM predictions p WHERE p.user_id = u.id AND p.game_id = ?)
-  `).run(gameId, gameId);
+  if (!game.winnerTeamId) {
+    // Tie: the game doesn't count for anyone. Clear any scoring so it's
+    // excluded from both wins and the win-% denominator.
+    db.prepare(`
+      UPDATE predictions SET is_correct = NULL, updated_at = CURRENT_TIMESTAMP WHERE game_id = ?
+    `).run(gameId);
+  } else {
+    // Create missing predictions as losses
+    db.prepare(`
+      INSERT INTO predictions (user_id, game_id, predicted_winner_team_id, is_correct, created_at, updated_at)
+      SELECT u.id, ?, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+      FROM users u
+      WHERE NOT EXISTS (SELECT 1 FROM predictions p WHERE p.user_id = u.id AND p.game_id = ?)
+    `).run(gameId, gameId);
 
-  // Score all predictions
-  db.prepare(`
-    UPDATE predictions
-    SET is_correct = CASE
-      WHEN predicted_winner_team_id = ? THEN 1
-      WHEN predicted_winner_team_id IS NULL THEN 0
-      ELSE 0
-    END, updated_at = CURRENT_TIMESTAMP
-    WHERE game_id = ?
-  `).run(game.winnerTeamId, gameId);
+    // Score all predictions
+    db.prepare(`
+      UPDATE predictions
+      SET is_correct = CASE
+        WHEN predicted_winner_team_id = ? THEN 1
+        WHEN predicted_winner_team_id IS NULL THEN 0
+        ELSE 0
+      END, updated_at = CURRENT_TIMESTAMP
+      WHERE game_id = ?
+    `).run(game.winnerTeamId, gameId);
+  }
 
   // Check if the whole week is now final
   const games = getGamesByWeek(game.seasonYear, game.seasonType, game.week);

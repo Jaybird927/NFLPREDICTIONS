@@ -161,8 +161,10 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
               const usedFifteenMin = passInfo?.usedFifteenGameIds?.includes(game.id) ?? false;
               const usedCorrection = passInfo?.correctionUsedGameIds?.includes(game.id) ?? false;
               const isYellow = usedFifteenMin || usedCorrection || isDesignated;
-              const rowBg = isYellow ? 'bg-yellow-50' : locked ? 'bg-gray-50' : '';
-              const stickyBg = isYellow ? 'bg-yellow-50' : 'bg-white';
+              // A final game with no winner is a tie, which doesn't count for anyone
+              const isTie = game.gameStatus === 'final' && !game.winnerTeamId;
+              const rowBg = isTie ? 'bg-blue-50' : isYellow ? 'bg-yellow-50' : locked ? 'bg-gray-50' : '';
+              const stickyBg = isTie ? 'bg-blue-50' : isYellow ? 'bg-yellow-50' : 'bg-white';
 
               const handleDesignate = async () => {
                 if (!authToken) return;
@@ -208,6 +210,9 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                           {game.gameStatus === 'final' && (
                             <span className="ml-1 text-gray-600">(F)</span>
                           )}
+                          {isTie && (
+                            <span className="ml-1 text-blue-700">TIE</span>
+                          )}
                         </div>
                       )}
                       {game.gameStatus === 'final' && (
@@ -251,6 +256,7 @@ export function PredictionGrid({ games, users, predictions, onSave, isAdmin, onR
                             isLocked={isEffectivelyLocked}
                             isCorrect={prediction?.isCorrect}
                             winnerTeamId={game.winnerTeamId}
+                            isTie={isTie}
                             onChange={(teamId) => handleCellChange(user.id, game.id, teamId, locked, inGraceWindow)}
                           />
                           {inGraceWindow && restrictToUser === user.id && (

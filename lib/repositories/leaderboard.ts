@@ -149,6 +149,8 @@ export async function recalculateLeaderboard(seasonYear: number, seasonType: num
     LEFT JOIN predictions p ON u.id = p.user_id
     LEFT JOIN games g ON p.game_id = g.id
     WHERE g.season_year = ? AND g.season_type = ?
+      -- Tie games (final, no winner) don't count for anyone
+      AND NOT (g.game_status = 'final' AND g.winner_team_id IS NULL)
     GROUP BY u.id
     HAVING total_predictions > 0
   `);

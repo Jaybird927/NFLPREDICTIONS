@@ -10,6 +10,7 @@ interface PredictionCellProps {
   isLocked: boolean;
   isCorrect?: boolean | null;
   winnerTeamId?: string;
+  isTie?: boolean;
   onChange: (teamId: string | null) => void;
 }
 
@@ -20,6 +21,7 @@ export function PredictionCell({
   isLocked,
   isCorrect,
   winnerTeamId,
+  isTie,
   onChange,
 }: PredictionCellProps) {
   const handleClick = () => {
@@ -48,7 +50,9 @@ export function PredictionCell({
   let bgColor = 'bg-gray-100 hover:bg-gray-200';
   if (isLocked) {
     bgColor = 'bg-gray-50';
-    if (isCorrect === true) {
+    if (isTie) {
+      bgColor = 'bg-blue-100';
+    } else if (isCorrect === true) {
       bgColor = 'bg-green-100';
     } else if (isCorrect === false) {
       bgColor = 'bg-red-100';
@@ -88,7 +92,12 @@ export function PredictionCell({
       )}
 
       {/* Show checkmark or X for finished games */}
-      {isLocked && isCorrect !== null && (
+      {isLocked && isTie && (
+        <div className="absolute top-0 right-0 text-[10px] font-semibold text-blue-700">
+          TIE
+        </div>
+      )}
+      {isLocked && !isTie && isCorrect !== null && (
         <div className="absolute top-0 right-0 text-xs">
           {isCorrect ? '✓' : '✗'}
         </div>

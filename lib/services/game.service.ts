@@ -55,18 +55,17 @@ export async function syncGamesFromESPN(
           result.gamesCreated++;
         }
 
-        // Update predictions if game is final with a winner. This handles:
+        // Update predictions if game is final (win or tie). This handles:
         // 1. Game just became final
         // 2. Winner changed
         // 3. Game was already final but predictions weren't scored
         // 4. Game is being synced for the very first time and is already
         //    final (e.g. nobody pressed sync while it was in progress)
         console.log(`Game ${event.id}: status=${gameData.gameStatus}, winner=${gameData.winnerTeamId}, homeScore=${gameData.homeScore}, awayScore=${gameData.awayScore}`);
-        if (gameData.gameStatus === GAME_STATUS.FINAL && gameData.winnerTeamId) {
-          console.log(`Game ${event.id} is final with winner ${gameData.winnerTeamId}, updating predictions...`);
+        if (gameData.gameStatus === GAME_STATUS.FINAL) {
+          // Ties have no winner; updatePredictionsForGame treats them as a push
+          console.log(`Game ${event.id} is final (${gameData.winnerTeamId ? `winner ${gameData.winnerTeamId}` : 'tie'}), updating predictions...`);
           await updatePredictionsForGame(gameId);
-        } else if (gameData.gameStatus === GAME_STATUS.FINAL && !gameData.winnerTeamId) {
-          console.log(`WARNING: Game ${event.id} is final but has no winner (tie game?)`);
         } else {
           console.log(`Game ${event.id} not final yet, skipping prediction updates`);
         }
